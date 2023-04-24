@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SOTAmatWSJTskimmer": {
+      "commandName": "Project",
+      "commandLineArgs": "-d -a=224.0.0.1 -m"
+    }
+  }
+}
