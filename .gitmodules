@@ -1,0 +1,3 @@
+[submodule "libs/m0lte"]
+	path = libs/m0lte
+	url = git@github.com:M0LTE/WsjtxUdpLib.git
