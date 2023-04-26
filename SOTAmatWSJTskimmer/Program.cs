@@ -75,7 +75,7 @@ namespace SOTAmatWSJTskimmer
                         if (config.Debug) Console.WriteLine($"Message decoded: {decodedMsg.Message}");
 
                         // If the statusMsg is a potential SOTAmat statusMsg, send it to the SOTAmat server
-                        string pattern = @"^(S(T(M(T)?)?|OTAM(T|AT)?)?)\s([0-9A-Z]{1,2}[0-9][0-9A-Z]{1,3})(/[0-9A-Z]{1,4})+$";
+                        string pattern = @"^(S(T(M(T)?)?|OTAM(T|AT)?)?M?)\s([0-9A-Z]{1,2}[0-9][0-9A-Z]{1,3})(/[0-9A-Z]{1,4})+$";
                         Regex regex = new(pattern, RegexOptions.IgnoreCase);
 
                         if (decodedMsg.Message.Length == 13 && regex.IsMatch(decodedMsg.Message))
