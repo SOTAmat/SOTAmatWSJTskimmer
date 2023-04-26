@@ -35,9 +35,11 @@
     <Content Include="towersignalantenna-115836_115793.ico" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\libs\m0lte\WsjtxUdpLib\WsjtxUdpLib\WsjtxUdpLib.csproj" />
-  </ItemGroup>
+
+
+	<ItemGroup>
+	  <ProjectReference Include="..\libs\m0lte\WsjtxUdpLib\WsjtxUdpLib.csproj" />
+	</ItemGroup>
 
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

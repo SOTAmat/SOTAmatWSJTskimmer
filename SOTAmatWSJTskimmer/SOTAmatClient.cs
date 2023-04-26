@@ -18,7 +18,7 @@ namespace SOTAmatWSJTskimmer
                         new KeyValuePair<string, string>("username", config.Callsign),
                         new KeyValuePair<string, string>("password", config.Password),
                         new KeyValuePair<string, string>("snr",      message.Snr.ToString()),
-                        new KeyValuePair<string, string>("deltatime",message.DeltaTime.ToString()),
+                        new KeyValuePair<string, string>("deltatime",message.DeltaTime.ToString("0.00")),
                         new KeyValuePair<string, string>("mode",     config.Mode),
                         new KeyValuePair<string, string>("message",  message.Message),
                         new KeyValuePair<string, string>("gridsquare", config.Gridsquare),
