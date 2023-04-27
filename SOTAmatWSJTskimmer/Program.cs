@@ -18,7 +18,9 @@ namespace SOTAmatWSJTskimmer
 
             // Parse the args passed in and set the variables
             Configuration config = ParseArgs.Parse(args);
-            if (config.ValidParse == false)
+
+            // Validate that we have reasonable instructions and that the user credentials are good
+            if (config.ValidParse == false || SOTAmatClient.Authenticate(config).Result != true)
             {
                 Console.WriteLine();
                 Console.WriteLine("Enter a key to exit...");
@@ -26,13 +28,15 @@ namespace SOTAmatWSJTskimmer
                 return 2;
             }
 
+            // Great.  With the bookeeping out of the way, let's connect to WSJT-X and start listening
             try
             {
 
                 Console.WriteLine("[type CTRL-C to exit]\n");
                 Console.WriteLine($"Attempting to connect {config.Callsign} to WSJT-X via {(config.Multicast ? "multicast" : "direct")} UDP at address {config.Address}...\n");
 
-                // Set a recurring timer to print an error every 5 seconds if we haven't received a heartbeat from WSJT-X in the last 30 seconds.
+                // Set a recurring 5 second timer to check if we haven't received a heartbeat from WSJT-X in the last 30 seconds.
+                // If heartbeat has been lost, let the user know so they can fix it!
                 Timer timer = new((e) =>
                 {
                     if (connected && (DateTime.Now - config.LastHeartbeat).TotalSeconds > 30)

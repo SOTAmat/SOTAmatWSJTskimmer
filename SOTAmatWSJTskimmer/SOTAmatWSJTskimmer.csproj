@@ -5,7 +5,7 @@
 
 	  <!--<TargetFramework>net6.0</TargetFramework>-->
 		<TargetFramework Condition="'$(TargetFramework)' == ''">net6.0</TargetFramework>
-	  <RuntimeIdentifiers>win-x64;linux-arm64;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
+	  <RuntimeIdentifiers>win-x64;linux-arm64;linux-arm;linux-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
 
 	  <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -16,7 +16,7 @@
     <Title>Plugin for WSJT-X for skimming SOTAmat messages</Title>
 	  <VersionPrefix>1.0.0</VersionPrefix>
 	  <VersionSuffix>beta</VersionSuffix>
-	  <BuildNumber Condition=" '$(BuildNumber)' == '' ">8</BuildNumber>
+	  <BuildNumber Condition=" '$(BuildNumber)' == '' ">9</BuildNumber>
 	  <AssemblyVersion>$(VersionPrefix).$(BuildNumber)</AssemblyVersion>
 	  <FileVersion>$(AssemblyVersion)</FileVersion>
 	  <PackageVersion>$(VersionPrefix)-$(VersionSuffix)</PackageVersion>
@@ -27,6 +27,9 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm64' Or '$(RuntimeIdentifier)' == 'osx-arm64'">
 		<PlatformTarget>arm64</PlatformTarget>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-arm'">
+		<PlatformTarget>arm</PlatformTarget>
 	</PropertyGroup>
 
 
