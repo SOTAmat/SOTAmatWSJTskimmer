@@ -11,8 +11,12 @@ To publish all platforms, use a command line tool and the "Publish-All_Platforms
 
 1. Get the source code for this project: `git clone [this repository]`
 2. Get the source code for M0LTE's "WsjtxUdpLib":
-   `git submodule init`
-   `git submodule update`
+
+```
+   git submodule init
+   git submodule update
+```
+
 3. Open the project in Visual Studio and build (or use `dotnet` command line)
 
 ## Acknowledgement
