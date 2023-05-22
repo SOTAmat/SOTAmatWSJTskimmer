@@ -33,9 +33,9 @@ namespace SOTAmatWSJTskimmer
             {
 
                 Console.WriteLine("[type CTRL-C to exit]\n");
-                Console.WriteLine($"Attempting to connect {config.Callsign} to WSJT-X via {(config.Multicast ? "multicast" : "direct")} UDP at address {config.Address}...\n");
+                Console.WriteLine($"Attempting to connect {config.Callsign} to WSJT-X via {(config.Multicast ? "multicast" : "direct")} UDP at address {config.Address} and a receiving antenna gridsquare of {config.Gridsquare}...\n");
 
-                // Set a recurring 5 second timer to check if we haven't received a heartbeat from WSJT-X in the last 30 seconds.
+                // Set a recurring 10 second timer to check if we haven't received a heartbeat from WSJT-X in the last 30 seconds.
                 // If heartbeat has been lost, let the user know so they can fix it!
                 Timer timer = new((e) =>
                 {
@@ -44,7 +44,7 @@ namespace SOTAmatWSJTskimmer
                         Console.WriteLine("ERROR: No heartbeat received from WSJT-X in over 30 seconds.  Is WSJT-X running?  Connected?");
                         connected = false;
                     }
-                }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5));
+                }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(10));
 
                 using var client = new WsjtxClient((msg, from) =>
                 {
@@ -84,7 +84,7 @@ namespace SOTAmatWSJTskimmer
 
                         if (decodedMsg.Message.Length == 13 && regex.IsMatch(decodedMsg.Message))
                         {
-                            Console.WriteLine($"SOTAmat Message Received!  Sending to SOTAmat Server: {decodedMsg.Message}");
+                            Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm")}: Sending received message to the SOTAmat server: {decodedMsg.Message}");
                             // Send the statusMsg to the SOTAmat server
                             Task.Run(() => SOTAmatClient.Send(config, decodedMsg));
                         }

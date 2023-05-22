@@ -1,4 +1,5 @@
 ﻿using M0LTE.WsjtxUdpLib.Messages.Out;
+using System.Reflection;
 
 namespace SOTAmatWSJTskimmer
 {
@@ -62,7 +63,7 @@ namespace SOTAmatWSJTskimmer
                         new KeyValuePair<string, string>("message",  message.Message),
                         new KeyValuePair<string, string>("gridsquare", config.Gridsquare),
                         new KeyValuePair<string, string>("frequency", (message.DeltaFrequency + config.DialFrequency).ToString()),
-                        new KeyValuePair<string, string>("software", "SOTAmat-WSJT-skim V1.0")
+                        new KeyValuePair<string, string>("software", $"SOTAmat-WSJT-skim V{Assembly.GetExecutingAssembly().GetName().Version}")
                     }); 
 
                     // Make the POST request to the REST API and get the response

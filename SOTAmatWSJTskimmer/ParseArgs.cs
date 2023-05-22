@@ -118,8 +118,9 @@ namespace SOTAmatWSJTskimmer
             Console.WriteLine("          [or use SOTAMAT_CALLSIGN environment variable]");
             Console.WriteLine("       -p=<SOTAmat user password>, --password=<SOTAmat user password> (required)");
             Console.WriteLine("          [or use SOTAMAT_PASSWORD environment variable]");
-            Console.WriteLine("       -g=<your gridsquare>, --gridsqure=<your gridsqure> (required)");
+            Console.WriteLine("       -g=<gridsquare of antenna>, --gridsqure=<gridsqure of antenna> (required)");
             Console.WriteLine("          [or use SOTAMAT_GRIDSQUARE environment variable]");
+            Console.WriteLine("          [NOTE: if you are remotely accessing an SDR such as WebSDR.org, don't use your home gridsquare, use the antenna's gridsquare]");
             Console.WriteLine();
             Console.WriteLine("  Examples:");
             Console.WriteLine("       SOTAmatWSJTskimmer      [Note: requires callsign, password, and gridsqure be set via environment variables]");
@@ -135,8 +136,12 @@ namespace SOTAmatWSJTskimmer
             version = string.IsNullOrEmpty(version) ? "unknown" : version;
 
             // Use the version in your code.
-            Console.WriteLine($"SOTAmat WSJT-X Skimmer v{version}, by Brian Mathews AB6D. WsjtxUdpLib by Tom Fanning M0LTE.");
-            Console.WriteLine("This utility connects to WSJT-X, filters reception reports, and sends SOTAmat messages to the SOTAmat server." );
+            Console.WriteLine($"SOTAmat WSJT-X Skimmer v{version}, by Brian Mathews AB6D,");
+            Console.WriteLine("    using library WsjtxUdpLib by Tom Fanning M0LTE.");
+            Console.WriteLine();
+            Console.WriteLine("This utility connects to WSJT-X, filters reception reports, and sends SOTAmat messages to the SOTAmat server.");
+            Console.WriteLine("More information at HTTPS://SOTAmat.com");
+            Console.WriteLine();
         }
 
     }
