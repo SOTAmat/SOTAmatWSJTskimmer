@@ -20,6 +20,14 @@ To publish all platforms, use a command line tool and the "Publish-All_Platforms
 3. Open the project in Visual Studio and build (or use `dotnet` command line)
 4. Once you have made any desired changes, from the command line navigate to the directory with the file `Publish-All-Platforms.bat` and execute that command.
 
+## Documentation
+
+See the PDF file in this repository, or run the app with the help option like:  `SOTAmatSkimmer --help`
+
+## Pre-Built Executables
+
+Found here, along with the latest documentation: https://1drv.ms/f/s!AhZ33h8betkWju1glmGtNv0X_zCoOw?e=bL78qE
+
 ## License
 
 Licensed under The MIT License.
