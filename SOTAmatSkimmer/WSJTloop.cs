@@ -24,7 +24,7 @@ namespace SOTAmatSkimmer
             {
                 if (connected && (DateTime.Now - Config.LastHeartbeat).TotalSeconds > 30)
                 {
-                    Console.WriteLine("ERROR: No heartbeat received from WSJT-X in over 30 seconds.  Is WSJT-X running?  Connected?");
+                    Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: No heartbeat received from WSJT-X in over 30 seconds.  Is WSJT-X running?  Connected?");
                     connected = false;
                 }
             }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(10));
@@ -39,7 +39,7 @@ namespace SOTAmatSkimmer
                         if (!connected)
                         {
                             connected = true;
-                            Console.WriteLine("Connected to WSJT-X!  Listening for SOTAmat messages...\n");
+                            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} Connected to WSJT-X!  Listening for SOTAmat messages...\n");
                         }
 
                         // Store the current time so that we can measure elapsed time from this point
@@ -78,13 +78,13 @@ namespace SOTAmatSkimmer
                 if (Config.Multicast)
                 {
                     Console.WriteLine();
-                    Console.WriteLine("NETWORK ERROR: unknown failure connecting to Multicast network port.");
+                    Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} NETWORK ERROR: unknown failure connecting to Multicast network port.");
                     Console.WriteLine(socketEx.Message);
                 }
                 else
                 {
                     Console.WriteLine();
-                    Console.WriteLine("NETWORK ERROR: failed to connect to unicast port.  Only one WSJT client can connect at a time, or configure WSJT-X and SOTAmatSkimmer for Multicast.");
+                    Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} NETWORK ERROR: failed to connect to unicast port.  Only one WSJT client can connect at a time, or configure WSJT-X and SOTAmatSkimmer for Multicast.");
                     Console.WriteLine(socketEx.Message);
                 }
                 return 2;
@@ -92,7 +92,7 @@ namespace SOTAmatSkimmer
             catch (Exception ex)
             {
                 Console.WriteLine();
-                Console.WriteLine("UNKNOWN ERROR: Internal SOTAmatSkimmer error.  Please report to support@sotamat.com");
+                Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} UNKNOWN ERROR: Internal SOTAmatSkimmer error.  Please report to support@sotamat.com");
                 Console.WriteLine(ex.Message);
                 Console.WriteLine();
                 Console.WriteLine("Enter a key to exit...");

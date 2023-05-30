@@ -28,7 +28,7 @@ namespace SOTAmatSkimmer
                     }
                     else
                     {
-                        Console.WriteLine($"ERROR: SOTAmat Server returned an error while authenticating user.");
+                        Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: SOTAmat Server returned an error while authenticating user.");
                         Console.WriteLine("Example command line:   SOTAmatSkimmer -c AB6D -p \"MyPasswordHere\" -g CN89tn\n");
                         // Write the response error message to the console
                         var responseContent = await response.Content.ReadAsStringAsync();
@@ -38,7 +38,7 @@ namespace SOTAmatSkimmer
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ERROR: failed to post message to SOTAmat Server when authenticating.");
+                Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: failed to post message to SOTAmat Server when authenticating.");
                 Console.WriteLine(ex.ToString());
             }
 
@@ -91,12 +91,12 @@ namespace SOTAmatSkimmer
                         var responseContent = await response.Content.ReadAsStringAsync();
                         if (config.Debug)
                         {
-                            Console.WriteLine("SOTAmat server responded with: success!");
+                            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm:ss")} SOTAmat server responded with: success!");
                         }
                     }
                     else
                     {
-                        Console.Write($"ERROR: SOTAmat Server returned an error while posting a potential SOTAmat message. ");
+                        Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: SOTAmat Server returned an error while posting a potential SOTAmat message. ");
                         // Write the response error message to the console
                         var responseContent = await response.Content.ReadAsStringAsync();
                         Console.WriteLine(responseContent);
@@ -105,7 +105,7 @@ namespace SOTAmatSkimmer
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ERROR: failed to post message to SOTAmat Server.");
+                Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: unspecific failure to post message to SOTAmat Server.");
                 Console.WriteLine(ex.ToString());
             }
         }

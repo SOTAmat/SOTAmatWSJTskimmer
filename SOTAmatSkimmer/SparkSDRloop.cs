@@ -20,7 +20,7 @@ namespace SOTAmatSkimmer
         public int Loop()
         {
             string url = $"ws://{Config.Address}:{Config.Port}/Spark";
-            Console.WriteLine($"Connecting to {url}...");
+            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} Connecting to {url}...");
 
 
             var wsClient = new WebSocketClient(url);
@@ -64,7 +64,7 @@ namespace SOTAmatSkimmer
                                     }
                                     catch (Exception e)
                                     {
-                                        Console.WriteLine($"ERROR: Unable to extract required SparkSDR message parameters: {e.Message}");
+                                        Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: Unable to extract required SparkSDR message parameters: {e.Message}");
                                     }
 
                                 }
@@ -110,7 +110,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Opened(object? sender, EventArgs e)
         {
-            Console.WriteLine("SparkSDR connection established.");
+            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} SparkSDR connection established.");
 
             // Subscribe to spots
             webSocket.Send("{\"cmd\":\"subscribeToSpots\",\"Enable\":true}");
@@ -118,7 +118,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Closed(object? sender, EventArgs e)
         {
-            // Console.WriteLine("Connection Closed");
+            // Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} Connection Closed");
 
             // Reconnect
             Start();
@@ -126,7 +126,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Error(object? sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
-            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} SparkSDR connect error: {e.Exception.Message}");
+            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} SparkSDR connect error (is it running?): {e.Exception.Message}");
         }
 
         private void WebSocket_MessageReceived(object? sender, MessageReceivedEventArgs e)
