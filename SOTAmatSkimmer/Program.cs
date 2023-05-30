@@ -8,10 +8,10 @@ namespace SOTAmatSkimmer
         static int Main(string[] args)
         {
 
-            ParseArgs.PrintVersion();
+            ArgumentParser.PrintVersion();
 
             // Parse the args passed in and set the variables
-            Configuration config = ParseArgs.Parse(args);
+            Configuration config = ArgumentParser.Parse(args);
 
             // Validate that we have reasonable instructions and that the user credentials are good
             if (config.ValidParse == false || SOTAmatClient.Authenticate(config).Result != true)
@@ -25,7 +25,7 @@ namespace SOTAmatSkimmer
             // Great.  With the bookeeping out of the way, let's connect to WSJT-X and start listening
 
             Console.WriteLine("[type CTRL-C to exit]\n");
-            Console.WriteLine($"Attempting to connect {config.Callsign} to {(config.SparkSDRmode ? "SparkSDR" : "WSJT-X")} via {(config.Multicast ? "multicast" : "direct")} UDP at address {config.Address} and a receiving antenna gridsquare of {config.Gridsquare}...\n");
+            Console.WriteLine($"Connect {config.Callsign} to {(config.SparkSDRmode ? "SparkSDR" : "WSJT-X")} via {(config.Multicast ? "multicast" : "direct")} {(config.SparkSDRmode ? "websocket" : "UDP")} at address {config.Address} with antenna gridsquare {config.Gridsquare}:\n");
 
 
             if (config.SparkSDRmode)

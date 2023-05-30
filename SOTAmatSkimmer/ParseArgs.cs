@@ -1,139 +1,78 @@
-﻿using System.Net;
-using System.Reflection;
-using System.Text.RegularExpressions;
+﻿using System.Reflection;
+using CommandLine;
 
 namespace SOTAmatSkimmer
 {
-    public class ParseArgs
+
+    public class ArgumentParser
     {
         public static Configuration Parse(string[] args)
         {
-            Configuration config = new();
+            var config = new Configuration();
 
-            // Parse the args passed in and set the variables
-            foreach (string arg in args)
+            var parser = new Parser(settings =>
             {
-                if (arg.StartsWith("-a=") || arg.StartsWith("--address="))
-                {
-                    string tempAddress = arg[(arg.IndexOf('=') + 1)..];
-                    if (IsValidIPAddress(tempAddress) || IsValidDNSName(tempAddress))
-                    {
-                        config.Address = tempAddress;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Invalid address: " + tempAddress);
-                        PrintHelp();
-                        return config;
-                    }
-                }
-                else if (arg.StartsWith("-c=") || arg.StartsWith("--callsign="))
-                {
-                    // Note that the callsign may already be set from the environment variable.
-                    // If so, it will be set in the Configuration constructor.
-                    // Here the user can override the environment variable with a command line argument.
-                    config.Callsign = arg[(arg.IndexOf('=') + 1)..];
-                }
-                else if (arg.StartsWith("-d") || arg.StartsWith("--debug"))
-                {
-                    config.Debug = true;
-                }
-                else if (arg.StartsWith("-g=") || arg.StartsWith("--gridsquare="))
-                {
-                    // Note that the gridsquare may already be set from the environment variable.
-                    // If so, it will be set in the Configuration constructor.
-                    // Here the user can override the environment variable with a command line argument.
-                    config.Gridsquare = arg[(arg.IndexOf('=') + 1)..];
-                }
-                else if (arg.StartsWith("-h") || arg.StartsWith("--help"))
-                {
-                    PrintHelp();
-                }
-                else if (arg.StartsWith("-l") || arg.StartsWith("--log"))
-                {
-                    config.Logging = true;
-                }
-                else if (arg.StartsWith("-m") || arg.StartsWith("--multicast"))
-                {
-                    config.Multicast = true;
-                }
-                else if (arg.StartsWith("-p=") || arg.StartsWith("--password="))
-                {
-                    // Note that the password may already be set from the environment variable.
-                    // If so, it will be set in the Configuration constructor.
-                    // Here the user can override the environment variable with a command line argument.
-                    config.Password = arg[(arg.IndexOf('=') + 1)..];
-                }
-                else if (arg.StartsWith("-port=") || arg.StartsWith("--port="))
-                {
-                    config.Port = int.Parse(arg[(arg.IndexOf('=') + 1)..]);
-                }
-                else if (arg.StartsWith("-v") || arg.StartsWith("--version"))
-                {
-                    PrintVersion();
-                }
-                else if (arg.StartsWith("-sparksdr") || arg.StartsWith("--sparksdr"))
-                {
-                    config.SparkSDRmode = true;
-                    config.Port = 4649;
-                }
-                else
-                {
-                    Console.WriteLine("Unknown argument: " + arg);
-                    PrintHelp();
-                    return config;
-                }
-            }
+                settings.AutoVersion = false;
+                settings.AutoHelp = true;
+                settings.HelpWriter = Console.Out;
+            });
 
+            parser.ParseArguments<Configuration>(args)
+                .WithParsed(parsedArgs => config = parsedArgs)
+                .WithNotParsed(errs => HandleParseError(errs));
+
+            // Validate configuration
             if (config.Callsign == String.Empty || config.Password == String.Empty || config.Gridsquare == String.Empty)
             {
-                Console.WriteLine("ERROR: Callsign, Password, and Gridsquare are required.\n");
+                Console.WriteLine("ERROR: Callsign, Password, and Gridsquare are required.  Try the '--help' command line option for instructions.\n");
                 PrintHelp();
-                return config;
             }
-
-            config.ValidParse = true;
+            else
+            {
+                config.ValidParse = true;
+            }
             return config;
         }
 
-        static bool IsValidIPAddress(string address)
+        static void HandleParseError(IEnumerable<Error> errs)
         {
-            return IPAddress.TryParse(address, out _);
+            // In case we have any errors while parsing arguments, we can handle them here.
+            // You can print the errors, or throw an exception, etc.
+            foreach (var error in errs)
+            {
+                Console.WriteLine($"Error parsing arguments: {error.Tag}");
+            }
+            PrintHelp();
         }
-
-        static bool IsValidDNSName(string dnsName)
-        {
-            var dnsPattern = @"^(?=.{1,253})(?=.{1,63}(?:\.|$))(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(?:\.[a-zA-Z0-9-]{1,63}(?<!-))*(?:\.|$)$";
-            return Regex.IsMatch(dnsName, dnsPattern);
-        }
-
 
         public static void PrintHelp()
         {
-            Console.WriteLine("Usage: SOTAmatSkimmer <options>");
-            Console.WriteLine("  Options:");
-            Console.WriteLine("       -h, --help");
-            Console.WriteLine("       -v, --version");
-            Console.WriteLine("       -d, --debug [default: false]");
-            Console.WriteLine("       -l, --log [default: false]");
-            Console.WriteLine("       -a=<DNS-name or IP-address>, --address=<name/ip> [default: 127.0.0.1]");
-            Console.WriteLine("       -port=<port>, --port=<port> [default: 2237]");
-            Console.WriteLine("       -m, --multicast [default: false]");
-            Console.WriteLine("       -c=<SOTAmat user callsign>, --callsign=<callsign> (required)");
-            Console.WriteLine("          [or use SOTAMAT_CALLSIGN environment variable]");
-            Console.WriteLine("       -p=<SOTAmat user password>, --password=<SOTAmat user password> (required)");
-            Console.WriteLine("          [or use SOTAMAT_PASSWORD environment variable]");
-            Console.WriteLine("       -g=<gridsquare of antenna>, --gridsqure=<gridsqure of antenna> (required)");
-            Console.WriteLine("          [or use SOTAMAT_GRIDSQUARE environment variable]");
-            Console.WriteLine("          [NOTE: if you are remotely accessing an SDR such as WebSDR.org, don't use your home gridsquare, use the antenna's gridsquare]");
-            Console.WriteLine("       -sparksdr");
-            Console.WriteLine("          [Use to connect to a SparkSDR server using websockets rather than WSJT-X UDP]");
-            Console.WriteLine("          [Note that SparkSDR might only work on localhost with the default -a=127.0.0.1]");
-            Console.WriteLine();
-            Console.WriteLine("  Examples:");
-            Console.WriteLine("       SOTAmatSkimmer      [Note: requires callsign, password, and gridsqure be set via environment variables]");
-            Console.WriteLine("       SOTAmatSkimmer -c=AA1ABC -p=mysecret -g=CM89");
-            Console.WriteLine("       SOTAmatSkimmer -c=AA1ABC -p=mysecret -g=CM89 -a=224.0.0.1 -port=2237 --multicast");
+            return;
+
+            //Console.WriteLine("Usage: SOTAmatSkimmer <options>");
+            //Console.WriteLine("  Options:");
+            //Console.WriteLine("       -h, --help");
+            //Console.WriteLine("       -v, --version");
+            //Console.WriteLine("       -d, --debug [default: false]");
+            //Console.WriteLine("       -l, --log [default: false]");
+            //Console.WriteLine("       -a=<DNS-name or IP-address>, --address=<name/ip> [default: 127.0.0.1]");
+            //Console.WriteLine("       -port=<port>, --port=<port> [default: 2237]");
+            //Console.WriteLine("       -m, --multicast [default: false]");
+            //Console.WriteLine("       -c=<SOTAmat user callsign>, --callsign=<callsign> (required)");
+            //Console.WriteLine("          [or use SOTAMAT_CALLSIGN environment variable]");
+            //Console.WriteLine("       -p=<SOTAmat user password>, --password=<SOTAmat user password> (required)");
+            //Console.WriteLine("          [or use SOTAMAT_PASSWORD environment variable]");
+            //Console.WriteLine("       -g=<gridsquare of antenna>, --gridsqure=<gridsqure of antenna> (required)");
+            //Console.WriteLine("          [or use SOTAMAT_GRIDSQUARE environment variable]");
+            //Console.WriteLine("          [NOTE: if you are remotely accessing an SDR such as WebSDR.org, don't use your home gridsquare, use the antenna's gridsquare]");
+            //Console.WriteLine("       -sparksdr");
+            //Console.WriteLine("          [Use to connect to a SparkSDR server using websockets rather than WSJT-X UDP]");
+            //Console.WriteLine("          [Note that SparkSDR might only work on localhost with the default -a=127.0.0.1]");
+            //Console.WriteLine();
+            //Console.WriteLine("  Examples:");
+            //Console.WriteLine("       SOTAmatSkimmer      [Note: requires callsign, password, and gridsqure be set via environment variables]");
+            //Console.WriteLine("       SOTAmatSkimmer -c=AA1ABC -p=mysecret -g=CM89");
+            //Console.WriteLine("       SOTAmatSkimmer -c=AA1ABC -p=mysecret -g=CM89 -a=224.0.0.1 -port=2237 --multicast");
         }
 
         public static void PrintVersion()
@@ -144,16 +83,18 @@ namespace SOTAmatSkimmer
             version = string.IsNullOrEmpty(version) ? "unknown" : version;
 
             // Use the version in your code.
-            Console.WriteLine($"SOTAmat WSJT-X Skimmer v{version}, by Brian Mathews AB6D,");
-            Console.WriteLine("    using library WsjtxUdpLib by Tom Fanning M0LTE.");
+            Console.WriteLine($"SOTAmatSkimmer v{version}, Copyright (c) 2023 Brian Mathews, AB6D. Licensed under The MIT License.");
+            Console.WriteLine("     Uses library WsjtxUdpLib by Tom Fanning M0LTE,");
+            Console.WriteLine("     Uses library CommandLineParser, (c) Giacomo Stelluti Scala & Contributors. The MIT License.");
+            Console.WriteLine("     Uses library Newtonsoft.Json, (c) James Newton-King. The MIT License.");
+            Console.WriteLine("     Uses library WebSocket4Net, (c) Kerry Jiang. The Apache V2.0 License.");
+            
             Console.WriteLine();
-            Console.WriteLine("This utility connects to WSJT-X, filters reception reports, and sends SOTAmat messages to the SOTAmat server.");
-            Console.WriteLine("More information at HTTPS://SOTAmat.com");
+            Console.WriteLine("This utility connects to either a WSJT-X or a SparkSDR server, filters reception reports, ");
+            Console.WriteLine("   and sends SOTAmat messages to the SOTAmat server.  Information at https://SOTAmat.com");
+            Console.WriteLine("");
             Console.WriteLine();
         }
 
     }
-
-
-
 }

@@ -29,6 +29,7 @@ namespace SOTAmatSkimmer
                     else
                     {
                         Console.WriteLine($"ERROR: SOTAmat Server returned an error while authenticating user.");
+                        Console.WriteLine("Example command line:   SOTAmatSkimmer -c AB6D -p \"MyPasswordHere\" -g CN89tn\n");
                         // Write the response error message to the console
                         var responseContent = await response.Content.ReadAsStringAsync();
                         Console.WriteLine(responseContent);
@@ -46,7 +47,7 @@ namespace SOTAmatSkimmer
 
         public static void ParseAndExecuteMessage(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
         {
-            if (config.Debug) Console.WriteLine($"Message received: {message}");
+            if (config.Debug) Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm:ss")} Debug: Message received: {message}");
 
             // If the statusMsg is a potential SOTAmat statusMsg, send it to the SOTAmat server
             string pattern = @"^(S(T(M(T)?)?|OTAM(T|AT)?)?M?)\s([0-9A-Z]{1,2}[0-9][0-9A-Z]{1,3})(/[0-9A-Z]{1,4})+$";
@@ -54,7 +55,7 @@ namespace SOTAmatSkimmer
 
             if (message.Length == 13 && regex.IsMatch(message))
             {
-                Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm")}: Sending received message to the SOTAmat server: {message}");
+                Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}: SOTAmat message received, sending to server: {message}");
                 // Send the statusMsg to the SOTAmat server
                 Task.Run(() => SOTAmatClient.Send(config, snr: snr, deltaTime: deltaTime, message: message, deltaFrequency: deltaFrequency));
             }

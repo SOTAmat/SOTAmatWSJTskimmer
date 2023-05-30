@@ -35,35 +35,39 @@ namespace SOTAmatSkimmer
                     {
                         var jsonData = JsonConvert.DeserializeObject<dynamic>(message);
 
-                        if (jsonData != null && jsonData["spots"] != null)
+                        if (jsonData != null)
                         {
-                            foreach (var spot in jsonData["spots"])
+                            var spots = jsonData["spots"];
+                            if (spots != null)
                             {
-                                try
+                                foreach (var spot in spots)
                                 {
-                                    Config.LastHeartbeat = DateTime.Now;
+                                    try
+                                    {
+                                        Config.LastHeartbeat = DateTime.Now;
 
-                                    int mySnr = (int)spot["snr"].Value;
-                                    double myDeltaTime = spot["dt"].Value;
-                                    string myMessage = spot["msg"].Value;
-                                    double myTunedFrequency = spot["tunedfrequency"].Value;
-                                    double myFrequency = spot["frequency"].Value;
-                                    int myDeltaFrequency = (int)(myFrequency - myTunedFrequency);
-                                    Config.DialFrequency = (long)myTunedFrequency;
-                                    Config.Mode = spot["mode"].Value;
+                                        int mySnr = (int)spot["snr"].Value;
+                                        double myDeltaTime = spot["dt"].Value;
+                                        string myMessage = spot["msg"].Value;
+                                        double myTunedFrequency = spot["tunedfrequency"].Value;
+                                        double myFrequency = spot["frequency"].Value;
+                                        int myDeltaFrequency = (int)(myFrequency - myTunedFrequency);
+                                        Config.DialFrequency = (long)myTunedFrequency;
+                                        Config.Mode = spot["mode"].Value;
 
-                                    SOTAmatClient.ParseAndExecuteMessage(Config,
-                                                                                snr: mySnr,
-                                                                                deltaTime: myDeltaTime,
-                                                                                message: myMessage,
-                                                                                deltaFrequency: myDeltaFrequency);
+                                        SOTAmatClient.ParseAndExecuteMessage(Config,
+                                                                                    snr: mySnr,
+                                                                                    deltaTime: myDeltaTime,
+                                                                                    message: myMessage,
+                                                                                    deltaFrequency: myDeltaFrequency);
+
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.WriteLine($"ERROR: Unable to extract required SparkSDR message parameters: {e.Message}");
+                                    }
 
                                 }
-                                catch (Exception e)
-                                {
-                                    Console.WriteLine($"ERROR: Unable to extract required SparkSDR message parameters: {e.Message}");
-                                }
-
                             }
                         }
                     }
@@ -106,7 +110,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Opened(object? sender, EventArgs e)
         {
-            Console.WriteLine("Connection Opened");
+            Console.WriteLine("SparkSDR connection established.");
 
             // Subscribe to spots
             webSocket.Send("{\"cmd\":\"subscribeToSpots\",\"Enable\":true}");
@@ -114,7 +118,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Closed(object? sender, EventArgs e)
         {
-            Console.WriteLine("Connection Closed");
+            // Console.WriteLine("Connection Closed");
 
             // Reconnect
             Start();
@@ -122,7 +126,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Error(object? sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
-            Console.WriteLine($"Connection Error: {e.Exception.Message}");
+            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} SparkSDR connect error: {e.Exception.Message}");
         }
 
         private void WebSocket_MessageReceived(object? sender, MessageReceivedEventArgs e)
