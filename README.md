@@ -1,6 +1,6 @@
 # SOTAmatSkimmer
 
-A WSJT-X Plugin that filters reception reports and forwards potential SOTAmat messages to the SOTAmat server
+A Plugin for both WSJT-X and SparkSDR that filters reception reports and forwards potential SOTAmat messages to the SOTAmat server, thereby reducing the normal 5-minute PSK Reporter delay.
 
 You can use Visual Studio to build the code.
 To publish all platforms, use a command line tool and the "Publish-All_Platforms.BAT" file on Windows. It will create the executables in a "Publish" folder.
@@ -19,6 +19,10 @@ To publish all platforms, use a command line tool and the "Publish-All_Platforms
 
 3. Open the project in Visual Studio and build (or use `dotnet` command line)
 4. Once you have made any desired changes, from the command line navigate to the directory with the file `Publish-All-Platforms.bat` and execute that command.
+
+## License
+
+Licensed under The MIT License.
 
 ## Acknowledgement
 
