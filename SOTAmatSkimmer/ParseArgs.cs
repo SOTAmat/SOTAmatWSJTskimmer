@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace SOTAmatWSJTskimmer
+namespace SOTAmatSkimmer
 {
     public class ParseArgs
     {
@@ -72,6 +72,11 @@ namespace SOTAmatWSJTskimmer
                 {
                     PrintVersion();
                 }
+                else if (arg.StartsWith("-sparksdr") || arg.StartsWith("--sparksdr"))
+                {
+                    config.SparkSDRmode = true;
+                    config.Port = 4649;
+                }
                 else
                 {
                     Console.WriteLine("Unknown argument: " + arg);
@@ -105,7 +110,7 @@ namespace SOTAmatWSJTskimmer
 
         public static void PrintHelp()
         {
-            Console.WriteLine("Usage: SOTAmatWSJTskimmer <options>");
+            Console.WriteLine("Usage: SOTAmatSkimmer <options>");
             Console.WriteLine("  Options:");
             Console.WriteLine("       -h, --help");
             Console.WriteLine("       -v, --version");
@@ -121,11 +126,14 @@ namespace SOTAmatWSJTskimmer
             Console.WriteLine("       -g=<gridsquare of antenna>, --gridsqure=<gridsqure of antenna> (required)");
             Console.WriteLine("          [or use SOTAMAT_GRIDSQUARE environment variable]");
             Console.WriteLine("          [NOTE: if you are remotely accessing an SDR such as WebSDR.org, don't use your home gridsquare, use the antenna's gridsquare]");
+            Console.WriteLine("       -sparksdr");
+            Console.WriteLine("          [Use to connect to a SparkSDR server using websockets rather than WSJT-X UDP]");
+            Console.WriteLine("          [Note that SparkSDR might only work on localhost with the default -a=127.0.0.1]");
             Console.WriteLine();
             Console.WriteLine("  Examples:");
-            Console.WriteLine("       SOTAmatWSJTskimmer      [Note: requires callsign, password, and gridsqure be set via environment variables]");
-            Console.WriteLine("       SOTAmatWSJTskimmer -c=AA1ABC -p=mysecret -g=CM89");
-            Console.WriteLine("       SOTAmatWSJTskimmer -c=AA1ABC -p=mysecret -g=CM89 -a=224.0.0.1 -port=2237 --multicast");
+            Console.WriteLine("       SOTAmatSkimmer      [Note: requires callsign, password, and gridsqure be set via environment variables]");
+            Console.WriteLine("       SOTAmatSkimmer -c=AA1ABC -p=mysecret -g=CM89");
+            Console.WriteLine("       SOTAmatSkimmer -c=AA1ABC -p=mysecret -g=CM89 -a=224.0.0.1 -port=2237 --multicast");
         }
 
         public static void PrintVersion()

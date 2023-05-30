@@ -1,5 +1,5 @@
 ﻿
-namespace SOTAmatWSJTskimmer
+namespace SOTAmatSkimmer
 {
     public class Configuration
     {
@@ -17,6 +17,7 @@ namespace SOTAmatWSJTskimmer
             Password = Environment.GetEnvironmentVariable("SOTAMAT_PASSWORD") ?? string.Empty;
             Port = 2237;
             ValidParse = false;
+            SparkSDRmode = false;
         }
         public string Address { get; set; }
         public string Callsign { get; set; }
@@ -30,5 +31,6 @@ namespace SOTAmatWSJTskimmer
         public string Password { get; set; }
         public int Port { get; set; }
         public bool ValidParse { get; set; }
+        public bool SparkSDRmode { get; set; }
     }
 }
