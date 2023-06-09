@@ -14,9 +14,9 @@
         <StartupObject></StartupObject>
         <ApplicationIcon>towersignalantenna-115836_115793.ico</ApplicationIcon>
         <Title>Plugin for WSJT-X for skimming SOTAmat messages</Title>
-        <VersionPrefix>1.1.1</VersionPrefix>
+        <VersionPrefix>1.1.2</VersionPrefix>
 		<VersionSuffix>stable</VersionSuffix>
-        <BuildNumber Condition=" '$(BuildNumber)' == '' ">14</BuildNumber>
+        <BuildNumber Condition=" '$(BuildNumber)' == '' ">17</BuildNumber>
         <AssemblyVersion>$(VersionPrefix).$(BuildNumber)</AssemblyVersion>
         <FileVersion>$(AssemblyVersion)</FileVersion>
         <PackageVersion>$(VersionPrefix)-$(VersionSuffix)</PackageVersion>
@@ -42,6 +42,7 @@
 
     <ItemGroup>
       <PackageReference Include="CommandLineParser" Version="2.9.1" />
+      <PackageReference Include="morelinq" Version="3.4.2" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="WebSocket4Net" Version="0.15.2" />
     </ItemGroup>

@@ -19,9 +19,10 @@ namespace SOTAmatSkimmer
         }
         public int Loop()
         {
-            string url = $"ws://{Config.Address}:{Config.Port}/Spark";
-            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} Connecting to {url}...");
+            SOTAmatClient smClient = new();
 
+            string url = $"ws://{Config.Address}:{Config.Port}/Spark";
+            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} Connecting to {url}...\n");
 
             var wsClient = new WebSocketClient(url);
             wsClient.Start();
@@ -55,7 +56,7 @@ namespace SOTAmatSkimmer
                                         Config.DialFrequency = (long)myTunedFrequency;
                                         Config.Mode = spot["mode"].Value;
 
-                                        SOTAmatClient.ParseAndExecuteMessage(Config,
+                                        smClient.ParseAndExecuteMessage(Config,
                                                                                     snr: mySnr,
                                                                                     deltaTime: myDeltaTime,
                                                                                     message: myMessage,

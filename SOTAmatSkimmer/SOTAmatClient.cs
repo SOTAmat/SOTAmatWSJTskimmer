@@ -45,9 +45,19 @@ namespace SOTAmatSkimmer
             return false;
         }
 
-        public static void ParseAndExecuteMessage(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
+        public void ParseAndExecuteMessage(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
         {
             if (config.Debug) Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm:ss")} Debug: Message received: {message}");
+
+            // Update the average DeltaTime we are seeing from these reception reports
+            UpdateAvergaeDeltaTime(deltaTime);
+            if (Math.Abs(deltaTimeAverage) > 0.5)
+                Console.ForegroundColor = ConsoleColor.Red;
+            else
+                Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ");
+            Console.SetCursorPosition(0, Console.CursorTop);
+            Console.ResetColor();
 
             // If the statusMsg is a potential SOTAmat statusMsg, send it to the SOTAmat server
             string pattern = @"^(S(T(M(T)?)?|OTAM(T|AT)?)?M?)\s([0-9A-Z]{1,2}[0-9][0-9A-Z]{1,3})(/[0-9A-Z]{1,4})+$";
@@ -109,5 +119,25 @@ namespace SOTAmatSkimmer
                 Console.WriteLine(ex.ToString());
             }
         }
+
+        // Create a circular buffer for tracking DeltaTime values
+        const int DELTA_TIME_REPORTS_TO_AVERAGE = 100;
+        private CircularBuffer<double> deltaTimeBuffer = new CircularBuffer<double>(DELTA_TIME_REPORTS_TO_AVERAGE);
+        private double deltaTimeAverage = 0.0;
+        private double deltaTimeAccumulator = 0.0;
+
+
+        private double UpdateAvergaeDeltaTime(double deltaTime)
+        {
+            if (deltaTimeBuffer.IsFull())
+                deltaTimeAccumulator -= deltaTimeBuffer.Dequeue();
+            deltaTimeBuffer.Enqueue(deltaTime);
+            deltaTimeAccumulator += deltaTime;
+
+            deltaTimeAverage = deltaTimeAccumulator / (double)DELTA_TIME_REPORTS_TO_AVERAGE;
+
+            return deltaTimeAverage;
+        }
+
     }
 }

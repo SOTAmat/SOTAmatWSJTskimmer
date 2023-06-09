@@ -3,6 +3,7 @@ using M0LTE.WsjtxUdpLib.Messages;
 using M0LTE.WsjtxUdpLib.Messages.Out;
 using System.Net;
 
+
 namespace SOTAmatSkimmer
 {
     public class WsjtxLooper
@@ -18,6 +19,8 @@ namespace SOTAmatSkimmer
         }
         public int Loop()
         {
+            SOTAmatClient smClient = new();
+
             // Set a recurring 10 second timer to check if we haven't received a heartbeat from WSJT-X in the last 30 seconds.
             // If heartbeat has been lost, let the user know so they can fix it!
             Timer timer = new((e) =>
@@ -61,7 +64,7 @@ namespace SOTAmatSkimmer
                     {
                         // Store the current time so that we can measure elapsed time from this point
                         Config.LastHeartbeat = DateTime.Now;
-                        SOTAmatClient.ParseAndExecuteMessage(   Config,
+                        smClient.ParseAndExecuteMessage(   Config,
                                                                 snr: decodedMsg.Snr,
                                                                 deltaTime: decodedMsg.DeltaTime,
                                                                 message: decodedMsg.Message,
@@ -101,5 +104,8 @@ namespace SOTAmatSkimmer
             }
 
         }
+
+
+
     }
 }
