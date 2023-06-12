@@ -50,14 +50,17 @@ namespace SOTAmatSkimmer
             if (config.Debug) Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm:ss")} Debug: Message received: {message}");
 
             // Update the average DeltaTime we are seeing from these reception reports
-            UpdateAvergaeDeltaTime(deltaTime);
-            if (Math.Abs(deltaTimeAverage) > 0.5)
-                Console.ForegroundColor = ConsoleColor.Red;
-            else
-                Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ");
-            Console.SetCursorPosition(0, Console.CursorTop);
-            Console.ResetColor();
+            if (!Console.IsOutputRedirected)
+            {
+                UpdateAvergaeDeltaTime(deltaTime);
+                if (Math.Abs(deltaTimeAverage) > 0.5)
+                    Console.ForegroundColor = ConsoleColor.Red;
+                else
+                    Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ");
+                Console.SetCursorPosition(0, Console.CursorTop);
+                Console.ResetColor();
+            }
 
             // If the statusMsg is a potential SOTAmat statusMsg, send it to the SOTAmat server
             string pattern = @"^(S(T(M(T)?)?|OTAM(T|AT)?)?M?)\s([0-9A-Z]{1,2}[0-9][0-9A-Z]{1,3})(/[0-9A-Z]{1,4})+$";
