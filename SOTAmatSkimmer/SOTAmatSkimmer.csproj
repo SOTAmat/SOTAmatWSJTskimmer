@@ -16,7 +16,7 @@
         <Title>Plugin for WSJT-X for skimming SOTAmat messages</Title>
         <VersionPrefix>1.1.2</VersionPrefix>
 		<VersionSuffix>stable</VersionSuffix>
-        <BuildNumber Condition=" '$(BuildNumber)' == '' ">18</BuildNumber>
+        <BuildNumber Condition=" '$(BuildNumber)' == '' ">19</BuildNumber>
         <AssemblyVersion>$(VersionPrefix).$(BuildNumber)</AssemblyVersion>
         <FileVersion>$(AssemblyVersion)</FileVersion>
         <PackageVersion>$(VersionPrefix)-$(VersionSuffix)</PackageVersion>

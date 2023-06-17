@@ -90,6 +90,10 @@ namespace SOTAmatSkimmer
                     Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} NETWORK ERROR: failed to connect to unicast port.  Only one WSJT client can connect at a time, or configure WSJT-X and SOTAmatSkimmer for Multicast.");
                     Console.WriteLine(socketEx.Message);
                 }
+
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+
                 return 2;
             }
             catch (Exception ex)
@@ -100,6 +104,10 @@ namespace SOTAmatSkimmer
                 Console.WriteLine();
                 Console.WriteLine("Enter a key to exit...");
                 Console.ReadKey();
+
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+
                 return 1;
             }
 

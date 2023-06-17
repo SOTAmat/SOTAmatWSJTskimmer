@@ -1,8 +1,7 @@
 {
   "profiles": {
     "SOTAmatSkimmer": {
-      "commandName": "Project",
-      "commandLineArgs": "--sparksdr"
+      "commandName": "Project"
     }
   }
 }
