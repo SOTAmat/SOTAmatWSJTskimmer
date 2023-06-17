@@ -125,7 +125,7 @@ namespace SOTAmatSkimmer
 
         // Create a circular buffer for tracking DeltaTime values
         const int DELTA_TIME_REPORTS_TO_AVERAGE = 100;
-        private CircularBuffer<double> deltaTimeBuffer = new CircularBuffer<double>(DELTA_TIME_REPORTS_TO_AVERAGE);
+        private CircularBuffer<double> deltaTimeBuffer = new(DELTA_TIME_REPORTS_TO_AVERAGE);
         private double deltaTimeAverage = 0.0;
         private double deltaTimeAccumulator = 0.0;
 
@@ -137,7 +137,7 @@ namespace SOTAmatSkimmer
             deltaTimeBuffer.Enqueue(deltaTime);
             deltaTimeAccumulator += deltaTime;
 
-            deltaTimeAverage = deltaTimeAccumulator / (double)DELTA_TIME_REPORTS_TO_AVERAGE;
+            deltaTimeAverage = deltaTimeAccumulator / (double)deltaTimeBuffer.Count;
 
             return deltaTimeAverage;
         }
