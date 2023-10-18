@@ -91,7 +91,7 @@ namespace SOTAmatSkimmer
                         new KeyValuePair<string, string>("mode",     config.Mode),
                         new KeyValuePair<string, string>("message",  message),
                         new KeyValuePair<string, string>("gridsquare", config.Gridsquare),
-                        new KeyValuePair<string, string>("frequency", (deltaFrequency + config.DialFrequency).ToString()),
+                        new KeyValuePair<string, string>("frequency", (deltaFrequency + config.DialFrequency).ToString()), // Frequency is in Hertz.  For example: 14074950
                         new KeyValuePair<string, string>("software", $"SOTAmatSkimmer V{Assembly.GetExecutingAssembly().GetName().Version}")
                     }); 
 
