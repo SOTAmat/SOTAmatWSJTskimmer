@@ -10,7 +10,7 @@ namespace SOTAmatSkimmer
 {
     public class SparkSDRlooper
     {
-        Configuration Config {get; set;}
+        Configuration Config { get; set; }
 
         // Set up the class constructor
         public SparkSDRlooper(Configuration config)
@@ -119,10 +119,8 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Closed(object? sender, EventArgs e)
         {
-            // Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} Connection Closed");
-
-            // Reconnect
-            Start();
+            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} SparkSDR connection closed. Attempting to reconnect in 15 seconds...");
+            Task.Delay(15000).ContinueWith(_ => Start());
         }
 
         private void WebSocket_Error(object? sender, SuperSocket.ClientEngine.ErrorEventArgs e)

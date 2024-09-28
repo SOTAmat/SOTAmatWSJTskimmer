@@ -15,36 +15,56 @@ namespace SOTAmatSkimmer
                 settings.AutoVersion = false;
                 settings.AutoHelp = true;
                 settings.HelpWriter = Console.Out;
+                settings.EnableDashDash = true;
             });
 
-            parser.ParseArguments<Configuration>(args)
+            // Pre-process args to support both '=' and space separators
+            var processedArgs = new List<string>();
+            foreach (var arg in args)
+            {
+                if (arg.Contains('='))
+                {
+                    var parts = arg.Split('=');
+                    processedArgs.Add(parts[0]);
+                    processedArgs.Add(parts[1]);
+                }
+                else
+                {
+                    processedArgs.Add(arg);
+                }
+            }
+
+            var result = parser.ParseArguments<Configuration>(processedArgs);
+
+            result
                 .WithParsed(parsedArgs => config = parsedArgs)
-                .WithNotParsed(errs => HandleParseError(errs));
+                .WithNotParsed(errs =>
+                {
+                    HandleParseError(errs);
+                    Environment.Exit(1); // Exit the program if there are parsing errors
+                });
 
             // Validate configuration
-            if (config.Callsign == String.Empty || config.Password == String.Empty || config.Gridsquare == String.Empty)
+            if (string.IsNullOrEmpty(config.Callsign) || string.IsNullOrEmpty(config.Password) || string.IsNullOrEmpty(config.Gridsquare))
             {
-                Console.WriteLine("ERROR: Callsign, Password, and Gridsquare are required.  Try the '--help' command line option for instructions.\n");
+                Console.WriteLine("ERROR: Callsign, Password, and Gridsquare are required. Try the '--help' command line option for instructions.\n");
                 PrintHelp();
+                Environment.Exit(1); // Exit the program if required fields are missing
             }
-            else
-            {
-                config.ValidParse = true;
-            }
+
+            config.ValidParse = true;
             return config;
         }
 
         static void HandleParseError(IEnumerable<Error> errs)
         {
-            // In case we have any errors while parsing arguments, we can handle them here.
-            // You can print the errors, or throw an exception, etc.
+            Console.WriteLine("Errors occurred while parsing command line arguments:");
             foreach (var error in errs)
             {
-                Console.WriteLine($"Error parsing arguments: {error.Tag}");
+                Console.WriteLine($"- {error.Tag}: {error}");
             }
             PrintHelp();
         }
-
         public static void PrintHelp()
         {
             return;
@@ -83,12 +103,12 @@ namespace SOTAmatSkimmer
             version = string.IsNullOrEmpty(version) ? "unknown" : version;
 
             // Use the version in your code.
-            Console.WriteLine($"SOTAmatSkimmer v{version}, Copyright (c) 2023 Brian Mathews, AB6D. Licensed under The MIT License.");
+            Console.WriteLine($"SOTAmatSkimmer v{version}, Copyright (c) 2023-2024 Brian Mathews, AB6D. Licensed under The MIT License.");
             Console.WriteLine("     Uses library WsjtxUdpLib by Tom Fanning M0LTE,");
             Console.WriteLine("     Uses library CommandLineParser, (c) Giacomo Stelluti Scala & Contributors. The MIT License.");
             Console.WriteLine("     Uses library Newtonsoft.Json, (c) James Newton-King. The MIT License.");
             Console.WriteLine("     Uses library WebSocket4Net, (c) Kerry Jiang. The Apache V2.0 License.");
-            
+
             Console.WriteLine();
             Console.WriteLine("This utility connects to either a WSJT-X or a SparkSDR server, filters reception reports, ");
             Console.WriteLine("   and sends SOTAmat messages to the SOTAmat server.  Information at https://SOTAmat.com");

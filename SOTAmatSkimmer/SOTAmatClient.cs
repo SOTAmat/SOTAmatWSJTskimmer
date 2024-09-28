@@ -73,10 +73,10 @@ namespace SOTAmatSkimmer
                 Task.Run(() => SOTAmatClient.Send(config, snr: snr, deltaTime: deltaTime, message: message, deltaFrequency: deltaFrequency));
             }
         }
-        public async static void Send(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
+        public async static Task Send(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
         {
             // Send the decoded message to the SOTAmat server via HTTPS POST
-            
+
             try
             {
                 using (var client = new HttpClient())
@@ -93,7 +93,7 @@ namespace SOTAmatSkimmer
                         new KeyValuePair<string, string>("gridsquare", config.Gridsquare),
                         new KeyValuePair<string, string>("frequency", (deltaFrequency + config.DialFrequency).ToString()), // Frequency is in Hertz.  For example: 14074950
                         new KeyValuePair<string, string>("software", $"SOTAmatSkimmer V{Assembly.GetExecutingAssembly().GetName().Version}")
-                    }); 
+                    });
 
                     // Make the POST request to the REST API and get the response
                     var response = await client.PostAsync("https://sotamat.com/wp-json/sotawp/v1/postmessage", requestContent);
@@ -110,9 +110,9 @@ namespace SOTAmatSkimmer
                     else
                     {
                         Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: SOTAmat Server returned an error while posting a potential SOTAmat message. ");
-                        // Write the response error message to the console
                         var responseContent = await response.Content.ReadAsStringAsync();
                         Console.WriteLine(responseContent);
+                        return;
                     }
                 }
             }
@@ -120,10 +120,12 @@ namespace SOTAmatSkimmer
             {
                 Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: unspecific failure to post message to SOTAmat Server.");
                 Console.WriteLine(ex.ToString());
+                return;
             }
         }
 
         // Create a circular buffer for tracking DeltaTime values
+        private readonly object _lockObject = new object();
         const int DELTA_TIME_REPORTS_TO_AVERAGE = 100;
         private CircularBuffer<double> deltaTimeBuffer = new(DELTA_TIME_REPORTS_TO_AVERAGE);
         private double deltaTimeAverage = 0.0;
@@ -132,15 +134,19 @@ namespace SOTAmatSkimmer
 
         private double UpdateAvergaeDeltaTime(double deltaTime)
         {
-            if (deltaTimeBuffer.IsFull())
-                deltaTimeAccumulator -= deltaTimeBuffer.Dequeue();
-            deltaTimeBuffer.Enqueue(deltaTime);
-            deltaTimeAccumulator += deltaTime;
+            lock (_lockObject)
+            {
+                if (deltaTimeBuffer.IsFull())
+                    deltaTimeAccumulator -= deltaTimeBuffer.Dequeue();
+                deltaTimeBuffer.Enqueue(deltaTime);
+                deltaTimeAccumulator += deltaTime;
 
-            deltaTimeAverage = deltaTimeAccumulator / (double)deltaTimeBuffer.Count;
+                deltaTimeAverage = deltaTimeAccumulator / (double)deltaTimeBuffer.Count;
 
-            return deltaTimeAverage;
+                return deltaTimeAverage;
+            }
         }
+
 
     }
 }
