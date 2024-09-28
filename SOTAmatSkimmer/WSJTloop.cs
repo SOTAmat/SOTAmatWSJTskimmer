@@ -110,6 +110,11 @@ namespace SOTAmatSkimmer
                 }
                 Console.WriteLine($"Will attempt to reconnect in {RECONNECT_INTERVAL_SECONDS} seconds.");
             }
+            catch (Exception ex)
+            {
+                connected = false;
+                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm} GENERAL ERROR: {ex.Message}");
+            }
         }
     }
 }

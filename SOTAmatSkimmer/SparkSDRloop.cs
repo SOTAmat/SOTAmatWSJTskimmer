@@ -11,20 +11,22 @@ namespace SOTAmatSkimmer
     public class SparkSDRlooper
     {
         Configuration Config { get; set; }
+        WebSocketClient wsClient;
+        private string url;
 
         // Set up the class constructor
         public SparkSDRlooper(Configuration config)
         {
             Config = config;
+            url = $"ws://{Config.Address}:{Config.Port}/Spark";
+            wsClient = new WebSocketClient(url);
         }
         public int Loop()
         {
             SOTAmatClient smClient = new();
 
-            string url = $"ws://{Config.Address}:{Config.Port}/Spark";
             Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} Connecting to {url}...\n");
 
-            var wsClient = new WebSocketClient(url);
             wsClient.Start();
 
             // Continuously consume response queue
@@ -36,40 +38,40 @@ namespace SOTAmatSkimmer
                     {
                         var jsonData = JsonConvert.DeserializeObject<dynamic>(message);
 
-                        if (jsonData != null)
+                        if (jsonData?.spots != null)
                         {
-                            var spots = jsonData["spots"];
-                            if (spots != null)
+                            foreach (var spot in jsonData.spots)
                             {
-                                foreach (var spot in spots)
+                                try
                                 {
-                                    try
-                                    {
-                                        Config.LastHeartbeat = DateTime.Now;
+                                    Config.LastHeartbeat = DateTime.Now;
 
-                                        int mySnr = (int)spot["snr"].Value;
-                                        double myDeltaTime = spot["dt"].Value;
-                                        string myMessage = spot["msg"].Value;
-                                        double myTunedFrequency = spot["tunedfrequency"].Value;
-                                        double myFrequency = spot["frequency"].Value;
-                                        int myDeltaFrequency = (int)(myFrequency - myTunedFrequency);
-                                        Config.DialFrequency = (long)myTunedFrequency;
-                                        Config.Mode = spot["mode"].Value;
+                                    int mySnr = (int)spot["snr"].Value;
+                                    double myDeltaTime = spot["dt"].Value;
+                                    string myMessage = spot["msg"].Value;
+                                    double myTunedFrequency = spot["tunedfrequency"].Value;
+                                    double myFrequency = spot["frequency"].Value;
+                                    int myDeltaFrequency = (int)(myFrequency - myTunedFrequency);
+                                    Config.DialFrequency = (long)myTunedFrequency;
+                                    Config.Mode = spot["mode"].Value;
 
-                                        smClient.ParseAndExecuteMessage(Config,
-                                                                                    snr: mySnr,
-                                                                                    deltaTime: myDeltaTime,
-                                                                                    message: myMessage,
-                                                                                    deltaFrequency: myDeltaFrequency);
-
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: Unable to extract required SparkSDR message parameters: {e.Message}");
-                                    }
+                                    smClient.ParseAndExecuteMessage(Config,
+                                                                                snr: mySnr,
+                                                                                deltaTime: myDeltaTime,
+                                                                                message: myMessage,
+                                                                                deltaFrequency: myDeltaFrequency);
 
                                 }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: Unable to extract required SparkSDR message parameters: {e.Message}");
+                                }
+
                             }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} WARNING: 'spots' field is missing in the received message.");
                         }
                     }
                 }
@@ -77,6 +79,12 @@ namespace SOTAmatSkimmer
                 Thread.Sleep(1000);
             }
 
+        }
+
+        public void Dispose()
+        {
+            wsClient.Stop();
+            // Dispose other managed resources if any
         }
     }
 

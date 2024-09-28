@@ -61,5 +61,12 @@ namespace SOTAmatSkimmer
         // Command line verb actions handled by CommandLineParser
         [Option('v', "version", Required = false, HelpText = "Show version information.")]
         public bool Version { get; set; } = false;
+
+        [Option("heartbeat-timeout", Required = false, HelpText = "Expected connection heartbeat from WSJT-X/SparkSDR timeout in seconds. Default: 30")]
+        public int HeartbeatTimeoutSeconds { get; set; } = 30;
+
+        [Option("reconnect-interval", Required = false, HelpText = "Reconnection attempt interval in seconds to WSJT-X/SparkSDR after a network error. Default: 15")]
+        public int ReconnectIntervalSeconds { get; set; } = 15;
+
     }
 }

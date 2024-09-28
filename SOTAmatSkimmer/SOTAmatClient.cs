@@ -52,7 +52,7 @@ namespace SOTAmatSkimmer
             // Update the average DeltaTime we are seeing from these reception reports
             if (!Console.IsOutputRedirected)
             {
-                UpdateAvergaeDeltaTime(deltaTime);
+                UpdateAverageDeltaTime(deltaTime);
                 if (Math.Abs(deltaTimeAverage) > 0.5)
                     Console.ForegroundColor = ConsoleColor.Red;
                 else
@@ -132,7 +132,7 @@ namespace SOTAmatSkimmer
         private double deltaTimeAccumulator = 0.0;
 
 
-        private double UpdateAvergaeDeltaTime(double deltaTime)
+        private double UpdateAverageDeltaTime(double deltaTime)
         {
             lock (_lockObject)
             {
