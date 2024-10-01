@@ -2,6 +2,7 @@
 using M0LTE.WsjtxUdpLib.Messages;
 using M0LTE.WsjtxUdpLib.Messages.Out;
 using System.Net;
+using SOTAmatSkimmer.Utilities;
 
 namespace SOTAmatSkimmer
 {
@@ -27,7 +28,7 @@ namespace SOTAmatSkimmer
             {
                 if (connected && (DateTime.Now - Config.LastHeartbeat).TotalSeconds > 30)
                 {
-                    Console.WriteLine($"{DateTime.Now:MM-dd HH:mm} ERROR: No heartbeat received from WSJT-X in over 30 seconds. Is WSJT-X running? Connected?");
+                    ConsoleHelper.SafeWriteLine($"ERROR: No heartbeat received from WSJT-X in over 30 seconds. Is WSJT-X running? Connected?\n", true, ConsoleColor.Red);
                     connected = false;
                 }
             }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(10));
@@ -52,9 +53,9 @@ namespace SOTAmatSkimmer
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm} UNKNOWN ERROR: Internal SOTAmatSkimmer error. Please report to support@sotamat.com");
-                Console.WriteLine(ex.Message);
-                Console.WriteLine("Press any key to exit...");
+                ConsoleHelper.SafeWriteLine($"UNKNOWN ERROR: Internal SOTAmatSkimmer error. Please report to support@sotamat.com", true, ConsoleColor.Red);
+                ConsoleHelper.SafeWriteLine(ex.Message, false);
+                ConsoleHelper.SafeWriteLine("Press any key to exit...", false, ConsoleColor.Yellow);
                 Console.ReadKey();
                 return 1;
             }
@@ -72,7 +73,7 @@ namespace SOTAmatSkimmer
                         if (!connected)
                         {
                             connected = true;
-                            Console.WriteLine($"{DateTime.Now:MM-dd HH:mm} Connected to WSJT-X! Listening for SOTAmat messages...\n");
+                            ConsoleHelper.SafeWriteLine($"Connected to WSJT-X! Listening for SOTAmat messages...\n", true, ConsoleColor.Green);
                         }
 
                         Config.LastHeartbeat = DateTime.Now;
@@ -99,21 +100,21 @@ namespace SOTAmatSkimmer
             catch (System.Net.Sockets.SocketException)
             {
                 connected = false;
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm} NETWORK ERROR: Failed to connect to WSJT-X. Is it running?");
+                ConsoleHelper.SafeWriteLine($"NETWORK ERROR: Failed to connect to WSJT-X. Is it running?", true, ConsoleColor.Red);
                 if (Config.Multicast)
                 {
-                    Console.WriteLine("Unknown failure connecting to Multicast network port.");
+                    ConsoleHelper.SafeWriteLine("Unknown failure connecting to Multicast network port.", false, ConsoleColor.Yellow);
                 }
                 else
                 {
-                    Console.WriteLine("Failed to connect to unicast port. Only one WSJT client can connect at a time, or configure WSJT-X and SOTAmatSkimmer for Multicast.");
+                    ConsoleHelper.SafeWriteLine("Failed to connect to unicast port. Only one WSJT client can connect at a time, or configure WSJT-X and SOTAmatSkimmer for Multicast.", false, ConsoleColor.Yellow);
                 }
-                Console.WriteLine($"Will attempt to reconnect in {RECONNECT_INTERVAL_SECONDS} seconds.");
+                ConsoleHelper.SafeWriteLine($"Will attempt to reconnect in {RECONNECT_INTERVAL_SECONDS} seconds.", false, ConsoleColor.Yellow);
             }
             catch (Exception ex)
             {
                 connected = false;
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm} GENERAL ERROR: {ex.Message}");
+                ConsoleHelper.SafeWriteLine($"GENERAL ERROR: {ex.Message}", true, ConsoleColor.Red);
             }
         }
     }

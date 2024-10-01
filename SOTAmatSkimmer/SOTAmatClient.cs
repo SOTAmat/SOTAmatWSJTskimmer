@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text.RegularExpressions;
+using SOTAmatSkimmer.Utilities;
 
 namespace SOTAmatSkimmer
 {
@@ -28,18 +29,18 @@ namespace SOTAmatSkimmer
                     }
                     else
                     {
-                        Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: SOTAmat Server returned an error while authenticating user.");
-                        Console.WriteLine("Example command line:   SOTAmatSkimmer -c AB6D -p \"MyPasswordHere\" -g CN89tn\n");
+                        ConsoleHelper.SafeWriteLine($"ERROR: SOTAmat Server returned an error while authenticating user.", true, ConsoleColor.Red);
+                        ConsoleHelper.SafeWriteLine("Example command line:   SOTAmatSkimmer -c AB6D -p \"MyPasswordHere\" -g CN89tn\n", false);
                         // Write the response error message to the console
                         var responseContent = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine(responseContent);
+                        ConsoleHelper.SafeWriteLine(responseContent, false);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: failed to post message to SOTAmat Server when authenticating.");
-                Console.WriteLine(ex.ToString());
+                ConsoleHelper.SafeWriteLine($"ERROR: failed to post message to SOTAmat Server when authenticating.", true, ConsoleColor.Red);
+                ConsoleHelper.SafeWriteLine(ex.ToString(), false);
             }
 
             return false;
@@ -47,19 +48,13 @@ namespace SOTAmatSkimmer
 
         public void ParseAndExecuteMessage(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
         {
-            if (config.Debug) Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm:ss")} Debug: Message received: {message}");
+            if (config.Debug) ConsoleHelper.SafeWriteLine($"Debug: Message received: {message}\n");
 
             // Update the average DeltaTime we are seeing from these reception reports
             if (!Console.IsOutputRedirected)
             {
                 UpdateAverageDeltaTime(deltaTime);
-                if (Math.Abs(deltaTimeAverage) > 0.5)
-                    Console.ForegroundColor = ConsoleColor.Red;
-                else
-                    Console.ForegroundColor = ConsoleColor.Green;
-                Console.Write($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ");
-                Console.SetCursorPosition(0, Console.CursorTop);
-                Console.ResetColor();
+                ConsoleHelper.SafeWrite($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ", false, Math.Abs(deltaTimeAverage) > 0.5 ? ConsoleColor.Red : ConsoleColor.Green, true);
             }
 
             // If the statusMsg is a potential SOTAmat statusMsg, send it to the SOTAmat server
@@ -68,11 +63,12 @@ namespace SOTAmatSkimmer
 
             if (message.Length == 13 && regex.IsMatch(message))
             {
-                Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}: SOTAmat message received, sending to server: {message}");
+                ConsoleHelper.SafeWriteLine($"SOTAmat message received, sending to server: {message}");
                 // Send the statusMsg to the SOTAmat server
                 Task.Run(() => SOTAmatClient.Send(config, snr: snr, deltaTime: deltaTime, message: message, deltaFrequency: deltaFrequency));
             }
         }
+
         public async static Task Send(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
         {
             // Send the decoded message to the SOTAmat server via HTTPS POST
@@ -101,25 +97,21 @@ namespace SOTAmatSkimmer
                     // Check if the response status is successful (status code 200)
                     if (response.IsSuccessStatusCode)
                     {
-                        var responseContent = await response.Content.ReadAsStringAsync();
-                        if (config.Debug)
-                        {
-                            Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm:ss")} SOTAmat server responded with: success!");
-                        }
+                        ConsoleHelper.SafeWriteLine("Message successfully posted to SOTAmat Server.");
                     }
                     else
                     {
-                        Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: SOTAmat Server returned an error while posting a potential SOTAmat message. ");
+                        ConsoleHelper.SafeWrite($"ERROR: SOTAmat Server returned an error while posting a potential SOTAmat message. ", true, ConsoleColor.Red);
                         var responseContent = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine(responseContent);
+                        ConsoleHelper.SafeWriteLine(responseContent, false, ConsoleColor.Red);
                         return;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{DateTime.Now.ToString("MM-dd HH:mm")} ERROR: unspecific failure to post message to SOTAmat Server.");
-                Console.WriteLine(ex.ToString());
+                ConsoleHelper.SafeWriteLine("ERROR: Failed to post message to SOTAmat Server.", true, ConsoleColor.Red);
+                ConsoleHelper.SafeWriteLine(ex.ToString(), false, ConsoleColor.Red);
                 return;
             }
         }
@@ -142,7 +134,6 @@ namespace SOTAmatSkimmer
                 deltaTimeAccumulator += deltaTime;
 
                 deltaTimeAverage = deltaTimeAccumulator / (double)deltaTimeBuffer.Count;
-
                 return deltaTimeAverage;
             }
         }
