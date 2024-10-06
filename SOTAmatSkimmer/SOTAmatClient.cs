@@ -4,9 +4,9 @@ using SOTAmatSkimmer.Utilities;
 
 namespace SOTAmatSkimmer
 {
-    public class SOTAmatClient
+    public static class SOTAmatClient
     {
-        public async static Task<bool> Authenticate(Configuration config)
+        public static async Task<bool> Authenticate(Configuration config)
         {
             try
             {
@@ -46,7 +46,7 @@ namespace SOTAmatSkimmer
             return false;
         }
 
-        public void ParseAndExecuteMessage(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
+        public static void ParseAndExecuteMessage(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
         {
             if (config.Debug) ConsoleHelper.SafeWriteLine($"Debug: Message received: {message}\n");
 
@@ -63,13 +63,13 @@ namespace SOTAmatSkimmer
 
             if (message.Length == 13 && regex.IsMatch(message))
             {
-                ConsoleHelper.SafeWriteLine($"SOTAmat message received, sending to server: {message}");
+                ConsoleHelper.SafeWrite($"Sending SOTAMAT report to server: {message} =>");
                 // Send the statusMsg to the SOTAmat server
                 Task.Run(() => SOTAmatClient.Send(config, snr: snr, deltaTime: deltaTime, message: message, deltaFrequency: deltaFrequency));
             }
         }
 
-        public async static Task Send(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
+        public static async Task Send(Configuration config, int snr, double deltaTime, string message, int deltaFrequency)
         {
             // Send the decoded message to the SOTAmat server via HTTPS POST
 
@@ -97,34 +97,36 @@ namespace SOTAmatSkimmer
                     // Check if the response status is successful (status code 200)
                     if (response.IsSuccessStatusCode)
                     {
-                        ConsoleHelper.SafeWriteLine("Message successfully posted to SOTAmat Server.");
+                        ConsoleHelper.SafeWriteLine("POSTED.", false, ConsoleColor.Green);
                     }
                     else
                     {
-                        ConsoleHelper.SafeWrite($"ERROR: SOTAmat Server returned an error while posting a potential SOTAmat message. ", true, ConsoleColor.Red);
+                        ConsoleHelper.SafeWriteLine("ERROR!", false, ConsoleColor.Red);
+                        ConsoleHelper.SafeWrite($"ERROR: SOTAmat Server returned an error. ", true, ConsoleColor.Red);
                         var responseContent = await response.Content.ReadAsStringAsync();
-                        ConsoleHelper.SafeWriteLine(responseContent, false, ConsoleColor.Red);
+                        ConsoleHelper.SafeWriteLine(responseContent, false, ConsoleColor.Yellow);
                         return;
                     }
                 }
             }
             catch (Exception ex)
             {
-                ConsoleHelper.SafeWriteLine("ERROR: Failed to post message to SOTAmat Server.", true, ConsoleColor.Red);
-                ConsoleHelper.SafeWriteLine(ex.ToString(), false, ConsoleColor.Red);
+                ConsoleHelper.SafeWriteLine("ERROR!", false, ConsoleColor.Red);
+                ConsoleHelper.SafeWriteLine("ERROR: Excelption posting to SOTAmat Server.", true, ConsoleColor.Red);
+                ConsoleHelper.SafeWriteLine(ex.ToString(), false, ConsoleColor.Yellow);
                 return;
             }
         }
 
         // Create a circular buffer for tracking DeltaTime values
-        private readonly object _lockObject = new object();
-        const int DELTA_TIME_REPORTS_TO_AVERAGE = 100;
-        private CircularBuffer<double> deltaTimeBuffer = new(DELTA_TIME_REPORTS_TO_AVERAGE);
-        private double deltaTimeAverage = 0.0;
-        private double deltaTimeAccumulator = 0.0;
+        private static readonly object _lockObject = new object();
+        private const int DELTA_TIME_REPORTS_TO_AVERAGE = 100;
+        private static readonly CircularBuffer<double> deltaTimeBuffer = new(DELTA_TIME_REPORTS_TO_AVERAGE);
+        private static double deltaTimeAverage = 0.0;
+        private static double deltaTimeAccumulator = 0.0;
 
 
-        private double UpdateAverageDeltaTime(double deltaTime)
+        private static double UpdateAverageDeltaTime(double deltaTime)
         {
             lock (_lockObject)
             {

@@ -13,43 +13,21 @@ namespace SOTAmatSkimmer
         private WsjtxClient? client;
         private DateTime lastConnectionAttempt = DateTime.MinValue;
         private const int RECONNECT_INTERVAL_SECONDS = 15;
-        private SOTAmatClient smClient;
 
         public WsjtxLooper(Configuration config)
         {
             Config = config;
             connected = false;
-            smClient = new SOTAmatClient();
         }
 
         public int Loop()
         {
-            Timer heartbeatTimer = new((e) =>
-            {
-                if (connected && (DateTime.Now - Config.LastHeartbeat).TotalSeconds > 30)
-                {
-                    ConsoleHelper.SafeWriteLine($"ERROR: No heartbeat received from WSJT-X in over 30 seconds. Is WSJT-X running? Connected?\n", true, ConsoleColor.Red);
-                    connected = false;
-                }
-            }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(10));
-
-            Timer reconnectTimer = new((e) =>
-            {
-                if (!connected && (DateTime.Now - lastConnectionAttempt).TotalSeconds >= RECONNECT_INTERVAL_SECONDS)
-                {
-                    AttemptConnection();
-                }
-            }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(1));
-
             try
             {
-                AttemptConnection();
+                Timer heartbeatTimer = new(CheckHeartbeat, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
 
-                // Keep the application running
-                while (true)
-                {
-                    Thread.Sleep(1000);
-                }
+                ConnectAndLoop();
+                return 0;  // This line will never be reached due to the infinite loop in ConnectAndLoop
             }
             catch (Exception ex)
             {
@@ -61,61 +39,83 @@ namespace SOTAmatSkimmer
             }
         }
 
-        private void AttemptConnection()
+        private void ConnectAndLoop()
         {
             lastConnectionAttempt = DateTime.Now;
             try
             {
                 client = new WsjtxClient((msg, from) =>
                 {
+                    Config.LastHeartbeat = DateTime.Now;
+                    if (!connected)
+                    {
+                        connected = true;
+                        ConsoleHelper.SafeWriteLine($"Connected to WSJT-X! Listening for SOTAmat messages...\n", true, ConsoleColor.Green);
+                    }
+
                     if (msg is StatusMessage statusMsg)
                     {
-                        if (!connected)
-                        {
-                            connected = true;
-                            ConsoleHelper.SafeWriteLine($"Connected to WSJT-X! Listening for SOTAmat messages...\n", true, ConsoleColor.Green);
-                        }
-
-                        Config.LastHeartbeat = DateTime.Now;
                         Config.DialFrequency = (long)statusMsg.DialFrequency;
                         Config.Mode = statusMsg.Mode;
                     }
 
-                    if (connected && msg is HeartbeatMessage)
+                    if (msg is DecodeMessage decodedMsg)
                     {
-                        Config.LastHeartbeat = DateTime.Now;
-                    }
-
-                    if (connected && msg is DecodeMessage decodedMsg)
-                    {
-                        Config.LastHeartbeat = DateTime.Now;
-                        smClient.ParseAndExecuteMessage(Config,
-                                                        snr: decodedMsg.Snr,
-                                                        deltaTime: decodedMsg.DeltaTime,
-                                                        message: decodedMsg.Message,
-                                                        deltaFrequency: decodedMsg.DeltaFrequency);
+                        SOTAmatClient.ParseAndExecuteMessage(Config,
+                                                                snr: decodedMsg.Snr,
+                                                                deltaTime: decodedMsg.DeltaTime,
+                                                                message: decodedMsg.Message,
+                                                                deltaFrequency: decodedMsg.DeltaFrequency);
                     }
                 }, ipAddress: IPAddress.Parse(Config.Address), port: Config.Port, multicast: Config.Multicast, debug: Config.Logging);
+
+                // Add this line to keep the main thread alive
+                while (true)
+                {
+                    Thread.Sleep(1000);
+                }
             }
             catch (System.Net.Sockets.SocketException)
             {
-                connected = false;
-                ConsoleHelper.SafeWriteLine($"NETWORK ERROR: Failed to connect to WSJT-X. Is it running?", true, ConsoleColor.Red);
-                if (Config.Multicast)
-                {
-                    ConsoleHelper.SafeWriteLine("Unknown failure connecting to Multicast network port.", false, ConsoleColor.Yellow);
-                }
-                else
-                {
-                    ConsoleHelper.SafeWriteLine("Failed to connect to unicast port. Only one WSJT client can connect at a time, or configure WSJT-X and SOTAmatSkimmer for Multicast.", false, ConsoleColor.Yellow);
-                }
-                ConsoleHelper.SafeWriteLine($"Will attempt to reconnect in {RECONNECT_INTERVAL_SECONDS} seconds.", false, ConsoleColor.Yellow);
+                HandleConnectionFailure("NETWORK ERROR: Failed to connect to WSJT-X. Is it running?");
             }
             catch (Exception ex)
             {
-                connected = false;
-                ConsoleHelper.SafeWriteLine($"GENERAL ERROR: {ex.Message}", true, ConsoleColor.Red);
+                HandleConnectionFailure($"GENERAL ERROR: {ex.Message}");
             }
         }
+
+        private void HandleConnectionFailure(string errorMessage)
+        {
+            connected = false;
+            ConsoleHelper.SafeWriteLine(errorMessage, true, ConsoleColor.Red);
+            if (Config.Multicast)
+            {
+                ConsoleHelper.SafeWriteLine("Unknown failure connecting to Multicast network port.", false, ConsoleColor.Yellow);
+            }
+            else
+            {
+                ConsoleHelper.SafeWriteLine("Failed to connect to unicast port. Only one WSJT client can connect at a time, or configure WSJT-X and SOTAmatSkimmer for Multicast.", false, ConsoleColor.Yellow);
+            }
+            ConsoleHelper.SafeWriteLine($"Will attempt to reconnect in {RECONNECT_INTERVAL_SECONDS} seconds.", false, ConsoleColor.Yellow);
+        }
+
+        private void CheckHeartbeat(object? state)
+        {
+            if (connected && (DateTime.Now - Config.LastHeartbeat).TotalSeconds > Config.HeartbeatTimeoutSeconds)
+            {
+                ConsoleHelper.SafeWriteLine($"ERROR: No heartbeat received from WSJT-X in over {Config.HeartbeatTimeoutSeconds} seconds. Connection lost.", true, ConsoleColor.Red);
+                HandleDisconnection();
+            }
+        }
+
+        private void HandleDisconnection()
+        {
+            connected = false;
+            client?.Dispose();
+            client = null;
+            ConsoleHelper.SafeWriteLine($"Disconnected from WSJT-X. Will attempt to reconnect in {RECONNECT_INTERVAL_SECONDS} seconds.", true, ConsoleColor.Yellow);
+        }
+
     }
 }

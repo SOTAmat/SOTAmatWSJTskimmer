@@ -20,7 +20,6 @@ namespace SOTAmatSkimmer
         }
         public int Loop()
         {
-            SOTAmatClient smClient = new();
 
             ConsoleHelper.SafeWriteLine($"Connecting to {url}...\n", true);
 
@@ -52,11 +51,11 @@ namespace SOTAmatSkimmer
                                     Config.DialFrequency = (long)myTunedFrequency;
                                     Config.Mode = spot["mode"].Value;
 
-                                    smClient.ParseAndExecuteMessage(Config,
-                                                                                snr: mySnr,
-                                                                                deltaTime: myDeltaTime,
-                                                                                message: myMessage,
-                                                                                deltaFrequency: myDeltaFrequency);
+                                    SOTAmatClient.ParseAndExecuteMessage(Config,
+                                                                            snr: mySnr,
+                                                                            deltaTime: myDeltaTime,
+                                                                            message: myMessage,
+                                                                            deltaFrequency: myDeltaFrequency);
 
                                 }
                                 catch (Exception e)
