@@ -24,8 +24,6 @@ namespace SOTAmatSkimmer
 
             // Great.  With the bookeeping out of the way, let's connect to WSJT-X or SparkSDR and start listening
             Console.WriteLine("[type CTRL-C to exit]\n");
-            Console.WriteLine($"Connecting {config.Callsign} to {(config.SparkSDRmode ? "SparkSDR" : "WSJT-X")} via {(config.Multicast ? "multicast" : "direct")} {(config.SparkSDRmode ? "websocket" : "UDP")} at address {config.Address} with antenna gridsquare {config.Gridsquare}:\n");
-            Console.WriteLine();
 
             if (config.SparkSDRmode)
             {

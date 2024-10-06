@@ -6,6 +6,7 @@ namespace SOTAmatSkimmer
 {
     public static class SOTAmatClient
     {
+        static bool ShowDeltaTime = true;
         public static async Task<bool> Authenticate(Configuration config)
         {
             try
@@ -54,7 +55,10 @@ namespace SOTAmatSkimmer
             if (!Console.IsOutputRedirected)
             {
                 UpdateAverageDeltaTime(deltaTime);
-                ConsoleHelper.SafeWrite($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ", false, Math.Abs(deltaTimeAverage) > 0.5 ? ConsoleColor.Red : ConsoleColor.Green, true);
+                if (ShowDeltaTime)
+                {
+                    ConsoleHelper.SafeWrite($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ", false, Math.Abs(deltaTimeAverage) > 0.5 ? ConsoleColor.Red : ConsoleColor.Green, true);
+                }
             }
 
             // If the statusMsg is a potential SOTAmat statusMsg, send it to the SOTAmat server
@@ -63,9 +67,14 @@ namespace SOTAmatSkimmer
 
             if (message.Length == 13 && regex.IsMatch(message))
             {
+                ShowDeltaTime = false;
                 ConsoleHelper.SafeWrite($"Sending SOTAMAT report to server: {message} =>");
                 // Send the statusMsg to the SOTAmat server
-                Task.Run(() => SOTAmatClient.Send(config, snr: snr, deltaTime: deltaTime, message: message, deltaFrequency: deltaFrequency));
+                Task.Run(async () =>
+                {
+                    await SOTAmatClient.Send(config, snr: snr, deltaTime: deltaTime, message: message, deltaFrequency: deltaFrequency);
+                    ShowDeltaTime = true;
+                });
             }
         }
 

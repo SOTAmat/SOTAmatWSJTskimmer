@@ -9,20 +9,17 @@ namespace SOTAmatSkimmer
     {
         Configuration Config { get; set; }
         WebSocketClient wsClient;
-        private string url;
+        private string _url;
 
         // Set up the class constructor
         public SparkSDRlooper(Configuration config)
         {
             Config = config;
-            url = $"ws://{Config.Address}:{Config.Port}/Spark";
-            wsClient = new WebSocketClient(url);
+            _url = $"ws://{Config.Address}:{Config.Port}/Spark";
+            wsClient = new WebSocketClient(Config, _url);
         }
         public int Loop()
         {
-
-            ConsoleHelper.SafeWriteLine($"Connecting to {url}...\n", true);
-
             wsClient.Start();
 
             // Continuously consume response queue
@@ -94,17 +91,24 @@ namespace SOTAmatSkimmer
         private WebSocket webSocket;
         public ConcurrentQueue<string> ResponseQueue { get; } = new ConcurrentQueue<string>();
 
-        public WebSocketClient(string url)
+        private Configuration Config { get; set; }
+        private string Url { get; set; }
+        public WebSocketClient(Configuration config, string url)
         {
             webSocket = new WebSocket(url);
             webSocket.Opened += WebSocket_Opened;
             webSocket.Closed += WebSocket_Closed;
             webSocket.Error += WebSocket_Error;
             webSocket.MessageReceived += WebSocket_MessageReceived;
+            Config = config;
+            Url = url;
         }
 
         public void Start()
         {
+            Console.WriteLine($"Connecting {Config.Callsign} to {(Config.SparkSDRmode ? "SparkSDR" : "WSJT-X")} via {(Config.Multicast ? "multicast" : "direct")} {(Config.SparkSDRmode ? "websocket" : "UDP")} at {Url} with grid {Config.Gridsquare}:\n");
+            Console.WriteLine();
+
             webSocket.Open();
         }
 
@@ -123,7 +127,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Closed(object? sender, EventArgs e)
         {
-            ConsoleHelper.SafeWriteLine($"SparkSDR connection closed. Attempting to reconnect in 15 seconds...\n", true, ConsoleColor.Magenta);
+            ConsoleHelper.SafeWriteLine($"SparkSDR connection lost. Attempting reconnect in 15 sec.\n", true, ConsoleColor.Red);
             Task.Delay(15000).ContinueWith(_ => Start());
         }
 
