@@ -475,3 +475,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# macOS signing environment variables
+**/sign-macos-builds.env
