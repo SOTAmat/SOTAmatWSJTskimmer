@@ -2,6 +2,20 @@
 
 echo "Signing macOS builds..."
 
+# Source the environment file if it exists
+ENV_FILE="$(dirname "${BASH_SOURCE[0]}")/sign-macos-builds.env"
+if [ -f "$ENV_FILE" ]; then
+    echo "Sourcing environment variables from $ENV_FILE"
+    source "$ENV_FILE"
+else
+    echo "Warning: Environment file $ENV_FILE not found"
+    echo "Will rely on environment variables already set"
+fi
+
+# Set .NET 6 environment
+export PATH="/opt/homebrew/opt/dotnet@6/bin:$PATH"
+export DOTNET_ROOT="/opt/homebrew/opt/dotnet@6/libexec"
+
 # Check for required environment variables
 if [ -z "$DEVELOPER_CERTIFICATE_ID" ]; then
     echo "Error: DEVELOPER_CERTIFICATE_ID environment variable is not set"
@@ -30,42 +44,97 @@ fi
 # Get the directory of the script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Sign the ARM64 (M1) build
-echo "Signing ARM64 (M1) build..."
-codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/SOTAmatSkimmer"
+# Sign all files in the macOS ARM64 folder
+echo "Signing all files in ARM64 (M1) folder..."
+find "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" -type f | while read file; do
+    codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$file"
+done
 
-# Sign the Intel build
-echo "Signing Intel build..."
-codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$SCRIPT_DIR/publish/mac-osx-intel-64bit/SOTAmatSkimmer"
+# Sign all files in the macOS Intel folder
+echo "Signing all files in Intel folder..."
+find "$SCRIPT_DIR/publish/mac-osx-intel-64bit" -type f | while read file; do
+    codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$file"
+done
+
+# Set executable permissions
+echo "Setting executable permissions..."
+chmod +x "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/SOTAmatSkimmer"
+chmod +x "$SCRIPT_DIR/publish/mac-osx-intel-64bit/SOTAmatSkimmer"
+
+# Create distribution directory
+mkdir -p "$SCRIPT_DIR/publish/distribution"
+
+# Create simple launcher script for each platform
+echo "Creating launcher scripts..."
+
+# For ARM64
+cat > "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/run-SOTAmatSkimmer.command" << EOL
+#!/bin/bash
+cd "\$(dirname "\$0")"
+./SOTAmatSkimmer
+EOL
+chmod +x "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/run-SOTAmatSkimmer.command"
+codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/run-SOTAmatSkimmer.command"
+
+# For Intel
+cat > "$SCRIPT_DIR/publish/mac-osx-intel-64bit/run-SOTAmatSkimmer.command" << EOL
+#!/bin/bash
+cd "\$(dirname "\$0")"
+./SOTAmatSkimmer
+EOL
+chmod +x "$SCRIPT_DIR/publish/mac-osx-intel-64bit/run-SOTAmatSkimmer.command"
+codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$SCRIPT_DIR/publish/mac-osx-intel-64bit/run-SOTAmatSkimmer.command"
+
+# Add README files to explain usage
+cat > "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/README.txt" << EOL
+SOTAmatSkimmer for macOS (ARM64/M1)
+
+To run the application:
+1. Double-click "run-SOTAmatSkimmer.command" to launch
+   - OR -
+2. Open Terminal and run:
+   cd /path/to/extracted/folder
+   ./SOTAmatSkimmer
+
+Note: All files in this folder must be kept together.
+EOL
+
+cat > "$SCRIPT_DIR/publish/mac-osx-intel-64bit/README.txt" << EOL
+SOTAmatSkimmer for macOS (Intel)
+
+To run the application:
+1. Double-click "run-SOTAmatSkimmer.command" to launch
+   - OR -
+2. Open Terminal and run:
+   cd /path/to/extracted/folder
+   ./SOTAmatSkimmer
+
+Note: All files in this folder must be kept together.
+EOL
+
+# Create ZIP archives for notarization
+echo "Creating ZIP archives for notarization..."
+ditto -c -k --keepParent "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-arm64.zip"
+ditto -c -k --keepParent "$SCRIPT_DIR/publish/mac-osx-intel-64bit" "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-intel.zip"
 
 # Create notarization requests
 echo "Submitting ARM64 build for notarization..."
-xcrun notarytool submit "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/SOTAmatSkimmer" \
+xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-arm64.zip" \
     --apple-id "$APPLE_ID" \
     --password "$APPLE_ID_PASSWORD" \
     --team-id "$APPLE_TEAM_ID" \
     --wait
 
 echo "Submitting Intel build for notarization..."
-xcrun notarytool submit "$SCRIPT_DIR/publish/mac-osx-intel-64bit/SOTAmatSkimmer" \
+xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-intel.zip" \
     --apple-id "$APPLE_ID" \
     --password "$APPLE_ID_PASSWORD" \
     --team-id "$APPLE_TEAM_ID" \
     --wait
 
-# Staple the notarization to the app
-echo "Stapling notarization to ARM64 build..."
-xcrun stapler staple "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/SOTAmatSkimmer"
-
-echo "Stapling notarization to Intel build..."
-xcrun stapler staple "$SCRIPT_DIR/publish/mac-osx-intel-64bit/SOTAmatSkimmer"
-
-# Verify the signatures
-echo "Verifying signatures..."
-echo "Verifying ARM64 build..."
-codesign -vvv --deep --strict "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/SOTAmatSkimmer"
-
-echo "Verifying Intel build..."
-codesign -vvv --deep --strict "$SCRIPT_DIR/publish/mac-osx-intel-64bit/SOTAmatSkimmer"
-
-echo "Signing complete!"
+echo "Signing and notarization complete!"
+echo "Distribution packages are available in: $SCRIPT_DIR/publish/distribution/"
+echo ""
+echo "Distribute these files to your users:"
+echo "- For M1 Macs: $SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-arm64.zip"
+echo "- For Intel Macs: $SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-intel.zip"
