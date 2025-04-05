@@ -44,97 +44,100 @@ fi
 # Get the directory of the script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Sign all files in the macOS ARM64 folder
-echo "Signing all files in ARM64 (M1) folder..."
-find "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" -type f | while read file; do
-    codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$file"
-done
+# Build the application for both architectures
+echo "Building application for ARM64..."
+dotnet publish -c Release -r osx-arm64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:PublishSingleFileCompression=true /p:DebugType=None -o "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit"
 
-# Sign all files in the macOS Intel folder
-echo "Signing all files in Intel folder..."
-find "$SCRIPT_DIR/publish/mac-osx-intel-64bit" -type f | while read file; do
-    codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$file"
-done
+echo "Building application for Intel..."
+dotnet publish -c Release -r osx-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:PublishSingleFileCompression=true /p:DebugType=None -o "$SCRIPT_DIR/publish/mac-osx-intel-64bit"
 
-# Set executable permissions
-echo "Setting executable permissions..."
-chmod +x "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/SOTAmatSkimmer"
-chmod +x "$SCRIPT_DIR/publish/mac-osx-intel-64bit/SOTAmatSkimmer"
+# Function to sign and prepare binary
+prepare_binary() {
+    local source_dir="$1"
+    local binary_name="$2"
+    
+    # Set executable permissions
+    chmod +x "$source_dir/SOTAmatSkimmer"
+    
+    # Clean any resource forks or Finder metadata
+    xattr -cr "$source_dir/SOTAmatSkimmer"
+    
+    # Sign the binary
+    echo "Signing binary at $source_dir/SOTAmatSkimmer..."
+    codesign -s "$DEVELOPER_CERTIFICATE_ID" \
+        -f -v \
+        --timestamp \
+        -o runtime \
+        --entitlements "$SCRIPT_DIR/SOTAmatSkimmer.entitlements" \
+        "$source_dir/SOTAmatSkimmer"
+    
+    # Verify the signature
+    echo "Verifying signature..."
+    codesign -v --deep --strict --verbose=2 "$source_dir/SOTAmatSkimmer"
+    
+    # Rename the binary to include architecture
+    mv "$source_dir/SOTAmatSkimmer" "$source_dir/$binary_name"
+    
+    # Create simple README
+    cat > "$source_dir/README.txt" << EOL
+SOTAmatSkimmer for macOS
+
+Installation:
+1. Copy $binary_name to any directory (e.g., ~/bin or /usr/local/bin)
+2. Make sure the directory is in your PATH
+3. Run the program by typing: $binary_name [options]
+
+For help with command-line options:
+   $binary_name --help
+
+Note: You may need to run 'chmod +x $binary_name' after copying to a new location.
+EOL
+}
 
 # Create distribution directory
 mkdir -p "$SCRIPT_DIR/publish/distribution"
 
-# Create simple launcher script for each platform
-echo "Creating launcher scripts..."
+# Process ARM64 build
+echo "Processing ARM64 build..."
+prepare_binary "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" "sotamat-arm64"
 
-# For ARM64
-cat > "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/run-SOTAmatSkimmer.command" << EOL
-#!/bin/bash
-cd "\$(dirname "\$0")"
-./SOTAmatSkimmer
-EOL
-chmod +x "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/run-SOTAmatSkimmer.command"
-codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/run-SOTAmatSkimmer.command"
-
-# For Intel
-cat > "$SCRIPT_DIR/publish/mac-osx-intel-64bit/run-SOTAmatSkimmer.command" << EOL
-#!/bin/bash
-cd "\$(dirname "\$0")"
-./SOTAmatSkimmer
-EOL
-chmod +x "$SCRIPT_DIR/publish/mac-osx-intel-64bit/run-SOTAmatSkimmer.command"
-codesign --force --options runtime --timestamp --sign "$DEVELOPER_CERTIFICATE_ID" "$SCRIPT_DIR/publish/mac-osx-intel-64bit/run-SOTAmatSkimmer.command"
-
-# Add README files to explain usage
-cat > "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/README.txt" << EOL
-SOTAmatSkimmer for macOS (ARM64/M1)
-
-To run the application:
-1. Double-click "run-SOTAmatSkimmer.command" to launch
-   - OR -
-2. Open Terminal and run:
-   cd /path/to/extracted/folder
-   ./SOTAmatSkimmer
-
-Note: All files in this folder must be kept together.
-EOL
-
-cat > "$SCRIPT_DIR/publish/mac-osx-intel-64bit/README.txt" << EOL
-SOTAmatSkimmer for macOS (Intel)
-
-To run the application:
-1. Double-click "run-SOTAmatSkimmer.command" to launch
-   - OR -
-2. Open Terminal and run:
-   cd /path/to/extracted/folder
-   ./SOTAmatSkimmer
-
-Note: All files in this folder must be kept together.
-EOL
+# Process Intel build
+echo "Processing Intel build..."
+prepare_binary "$SCRIPT_DIR/publish/mac-osx-intel-64bit" "sotamat-intel"
 
 # Create ZIP archives for notarization
 echo "Creating ZIP archives for notarization..."
-ditto -c -k --keepParent "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-arm64.zip"
-ditto -c -k --keepParent "$SCRIPT_DIR/publish/mac-osx-intel-64bit" "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-intel.zip"
+ditto -c -k --keepParent "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/sotamat-arm64" "$SCRIPT_DIR/publish/distribution/sotamat-arm64.zip"
+ditto -c -k --keepParent "$SCRIPT_DIR/publish/mac-osx-intel-64bit/sotamat-intel" "$SCRIPT_DIR/publish/distribution/sotamat-intel.zip"
 
-# Create notarization requests
+# Submit for notarization
 echo "Submitting ARM64 build for notarization..."
-xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-arm64.zip" \
+xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/sotamat-arm64.zip" \
     --apple-id "$APPLE_ID" \
     --password "$APPLE_ID_PASSWORD" \
     --team-id "$APPLE_TEAM_ID" \
     --wait
 
 echo "Submitting Intel build for notarization..."
-xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-intel.zip" \
+xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/sotamat-intel.zip" \
     --apple-id "$APPLE_ID" \
     --password "$APPLE_ID_PASSWORD" \
     --team-id "$APPLE_TEAM_ID" \
     --wait
 
+# Create final distribution packages with binaries and READMEs
+echo "Creating final distribution packages..."
+cd "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" && zip -r "$SCRIPT_DIR/publish/distribution/sotamat-arm64-final.zip" sotamat-arm64 README.txt
+cd "$SCRIPT_DIR/publish/mac-osx-intel-64bit" && zip -r "$SCRIPT_DIR/publish/distribution/sotamat-intel-final.zip" sotamat-intel README.txt
+
 echo "Signing and notarization complete!"
 echo "Distribution packages are available in: $SCRIPT_DIR/publish/distribution/"
 echo ""
 echo "Distribute these files to your users:"
-echo "- For M1 Macs: $SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-arm64.zip"
-echo "- For Intel Macs: $SCRIPT_DIR/publish/distribution/SOTAmatSkimmer-intel.zip"
+echo "- For M1 Macs: $SCRIPT_DIR/publish/distribution/sotamat-arm64-final.zip"
+echo "- For Intel Macs: $SCRIPT_DIR/publish/distribution/sotamat-intel-final.zip"
+echo ""
+echo "Users can simply:"
+echo "1. Unzip the file"
+echo "2. Copy the binary to any directory in their PATH"
+echo "3. Run 'sotamat-arm64' or 'sotamat-intel' from any location"
