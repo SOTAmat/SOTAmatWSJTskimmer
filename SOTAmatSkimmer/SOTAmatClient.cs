@@ -20,21 +20,41 @@ namespace SOTAmatSkimmer
                         new KeyValuePair<string, string>("password", config.Password),
                     });
 
+                    if (config.ShowParams)
+                    {
+                        ConsoleHelper.SafeWriteLine("Sending authentication request to SOTAmat server...", true, ConsoleColor.Cyan);
+                        ConsoleHelper.SafeWriteLine($"URL: https://sotamat.com/wp-json/sotawp/v1/authenticate", false, ConsoleColor.Cyan);
+                        ConsoleHelper.SafeWriteLine($"Username: '{config.Callsign}'", false, ConsoleColor.Cyan);
+                        ConsoleHelper.SafeWriteLine($"Password: (length: {config.Password.Length}): {config.Password}", false, ConsoleColor.Cyan);
+                    }
+
                     // Make the POST request to the REST API and get the response
                     var response = await client.PostAsync("https://sotamat.com/wp-json/sotawp/v1/authenticate", requestContent);
 
                     // Check if the response status is successful (status code 200)
                     if (response.IsSuccessStatusCode)
                     {
+                        if (config.ShowParams)
+                        {
+                            ConsoleHelper.SafeWriteLine("Authentication successful!", true, ConsoleColor.Green);
+                        }
                         return true;
                     }
                     else
                     {
                         ConsoleHelper.SafeWriteLine($"ERROR: SOTAmat Server returned an error while authenticating user.", true, ConsoleColor.Red);
                         ConsoleHelper.SafeWriteLine("Example command line:   SOTAmatSkimmer -c AB6D -p \"MyPasswordHere\" -g CN89tn\n", false);
+
                         // Write the response error message to the console
                         var responseContent = await response.Content.ReadAsStringAsync();
                         ConsoleHelper.SafeWriteLine(responseContent, false);
+
+                        if (config.ShowParams)
+                        {
+                            ConsoleHelper.SafeWriteLine($"Response Status Code: {(int)response.StatusCode} {response.StatusCode}", true, ConsoleColor.Yellow);
+                            ConsoleHelper.SafeWriteLine($"Response Content: {responseContent}", false, ConsoleColor.Yellow);
+                            ConsoleHelper.SafeWriteLine("Try enclosing your password in quotes if it contains special characters.", false, ConsoleColor.Yellow);
+                        }
                     }
                 }
             }
@@ -42,6 +62,13 @@ namespace SOTAmatSkimmer
             {
                 ConsoleHelper.SafeWriteLine($"ERROR: failed to post message to SOTAmat Server when authenticating.", true, ConsoleColor.Red);
                 ConsoleHelper.SafeWriteLine(ex.ToString(), false);
+
+                if (config.ShowParams)
+                {
+                    ConsoleHelper.SafeWriteLine("Exception Details:", true, ConsoleColor.Yellow);
+                    ConsoleHelper.SafeWriteLine($"Exception Type: {ex.GetType().Name}", false, ConsoleColor.Yellow);
+                    ConsoleHelper.SafeWriteLine($"Exception Message: {ex.Message}", false, ConsoleColor.Yellow);
+                }
             }
 
             return false;

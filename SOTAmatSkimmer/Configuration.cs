@@ -68,5 +68,7 @@ namespace SOTAmatSkimmer
         [Option("reconnect-interval", Required = false, HelpText = "Reconnection attempt interval in seconds to WSJT-X/SparkSDR after a network error. Default: 15")]
         public int ReconnectIntervalSeconds { get; set; } = 15;
 
+        [Option("showparams", Required = false, HelpText = "Display all parameters after parsing environment variables and command line options.")]
+        public bool ShowParams { get; set; } = false;
     }
 }
