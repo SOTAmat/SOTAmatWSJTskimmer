@@ -13,9 +13,9 @@
         <StartupObject></StartupObject>
         <ApplicationIcon>towersignalantenna-115836_115793.ico</ApplicationIcon>
         <Title>Plugin for WSJT-X for skimming SOTAmat messages</Title>
-        <VersionPrefix>1.1.3</VersionPrefix>
+        <VersionPrefix>1.1.4</VersionPrefix>
         <VersionSuffix>stable</VersionSuffix>
-        <BuildNumber Condition=" '$(BuildNumber)' == '' ">25</BuildNumber>
+        <BuildNumber Condition=" '$(BuildNumber)' == '' ">26</BuildNumber>
         <AssemblyVersion>$(VersionPrefix).$(BuildNumber)</AssemblyVersion>
         <FileVersion>$(AssemblyVersion)</FileVersion>
         <PackageVersion>$(VersionPrefix)-$(VersionSuffix)</PackageVersion>
