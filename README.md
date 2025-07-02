@@ -26,7 +26,7 @@ See the PDF file in this repository, or run the app with the help option like:  
 
 ## Pre-Built Executables
 
-Found here, along with the latest documentation: https://1drv.ms/f/s!AhZ33h8betkWju1glmGtNv0X_zCoOw?e=bL78qE
+Found here, along with the latest documentation: [https://1drv.ms/f/s!AhZ33h8betkWju1glmGtNv0X_zCoOw?e=bL78qE](https://1drv.ms/f/c/16d97a1b1fde7716/EhZ33h8betkggBbgtgMAAAABIwhrHAmY4tlXVQulxYIf8A?e=04HCPD)
 
 ## License
 
