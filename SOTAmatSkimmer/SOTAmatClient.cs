@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using SOTAmatSkimmer.Utilities;
 
@@ -95,7 +95,7 @@ namespace SOTAmatSkimmer
             if (message.Length == 13 && regex.IsMatch(message))
             {
                 ShowDeltaTime = false;
-                ConsoleHelper.SafeWrite($"Sending SOTAMAT report to server: {message} =>");
+                ConsoleHelper.SafeWrite($"Sending SOTAMAT report to server (DT={deltaTime:F2} s): {message} =>");
                 // Send the statusMsg to the SOTAmat server
                 Task.Run(async () =>
                 {
