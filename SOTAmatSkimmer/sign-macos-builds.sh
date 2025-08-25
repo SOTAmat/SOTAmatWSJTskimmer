@@ -2,8 +2,11 @@
 
 echo "Signing macOS builds..."
 
+# Get the directory of the script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Source the environment file if it exists
-ENV_FILE="$(dirname "${BASH_SOURCE[0]}")/sign-macos-builds.env"
+ENV_FILE="$SCRIPT_DIR/sign-macos-builds.env"
 if [ -f "$ENV_FILE" ]; then
     echo "Sourcing environment variables from $ENV_FILE"
     source "$ENV_FILE"
@@ -41,9 +44,6 @@ if [ -z "$APPLE_TEAM_ID" ]; then
     exit 1
 fi
 
-# Get the directory of the script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Build the application for both architectures
 echo "Building application for ARM64..."
 dotnet publish -c Release -r osx-arm64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:PublishSingleFileCompression=true /p:DebugType=None -o "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit"
@@ -56,26 +56,105 @@ prepare_binary() {
     local source_dir="$1"
     local binary_name="$2"
     
+    echo "=== Processing $binary_name ==="
+    echo "Source directory: $source_dir"
+    
+    # Check if binary exists
+    if [ ! -f "$source_dir/SOTAmatSkimmer" ]; then
+        echo "ERROR: Binary not found at $source_dir/SOTAmatSkimmer"
+        return 1
+    fi
+    
+    # Show binary details
+    echo "Binary details:"
+    ls -la "$source_dir/SOTAmatSkimmer"
+    file "$source_dir/SOTAmatSkimmer"
+    
     # Set executable permissions
     chmod +x "$source_dir/SOTAmatSkimmer"
     
     # Clean any resource forks or Finder metadata
+    echo "Cleaning resource forks and metadata..."
     xattr -cr "$source_dir/SOTAmatSkimmer"
+    
+    # Check entitlements file
+    echo "Checking entitlements file..."
+    if [ -f "$SCRIPT_DIR/SOTAmatSkimmer.entitlements" ]; then
+        echo "Entitlements file exists:"
+        cat "$SCRIPT_DIR/SOTAmatSkimmer.entitlements"
+    else
+        echo "WARNING: Entitlements file not found at $SCRIPT_DIR/SOTAmatSkimmer.entitlements"
+    fi
+    
+    # Check certificate availability
+    echo "Checking certificate availability..."
+    security find-identity -v -p codesigning | grep "$DEVELOPER_CERTIFICATE_ID" || {
+        echo "ERROR: Certificate not found in keychain!"
+        echo "Available certificates:"
+        security find-identity -v -p codesigning
+        return 1
+    }
+    
+    # Check keychain access
+    echo "Checking keychain access..."
+    security list-keychains
+    security default-keychain
     
     # Sign the binary
     echo "Signing binary at $source_dir/SOTAmatSkimmer..."
-    codesign -s "$DEVELOPER_CERTIFICATE_ID" \
+    echo "Using certificate: Developer ID Application: Brian Mathews (B8AYRC6H39)"
+    
+    # Try signing without hardened runtime first to isolate the issue
+    echo "Attempting code signing without hardened runtime..."
+    codesign -s "Developer ID Application: Brian Mathews (B8AYRC6H39)" \
+        -f -v \
+        --timestamp \
+        --entitlements "$SCRIPT_DIR/SOTAmatSkimmer.entitlements" \
+        "$source_dir/SOTAmatSkimmer" 2>&1
+    
+    local sign_result=$?
+    if [ $sign_result -ne 0 ]; then
+        echo "ERROR: Code signing failed with exit code $sign_result!"
+        echo "This usually indicates:"
+        echo "1. Certificate chain issues (missing intermediate certificates)"
+        echo "2. Keychain access problems"
+        echo "3. Certificate expiration or revocation"
+        echo "4. Hardened runtime conflicts"
+        return 1
+    fi
+    
+    echo "Code signing successful! Now applying hardened runtime..."
+    
+    # Now try to add hardened runtime
+    codesign -s "Developer ID Application: Brian Mathews (B8AYRC6H39)" \
         -f -v \
         --timestamp \
         -o runtime \
         --entitlements "$SCRIPT_DIR/SOTAmatSkimmer.entitlements" \
-        "$source_dir/SOTAmatSkimmer"
+        "$source_dir/SOTAmatSkimmer" 2>&1
+    
+    local runtime_result=$?
+    if [ $runtime_result -ne 0 ]; then
+        echo "WARNING: Could not apply hardened runtime, but basic signing succeeded"
+        echo "This may cause notarization issues"
+    else
+        echo "Hardened runtime applied successfully"
+    fi
     
     # Verify the signature
     echo "Verifying signature..."
     codesign -v --deep --strict --verbose=2 "$source_dir/SOTAmatSkimmer"
     
-    # Rename the binary to include architecture
+    # Additional verification
+    echo "Checking code signing details..."
+    codesign -d --entitlements - "$source_dir/SOTAmatSkimmer" 2>/dev/null || echo "No entitlements found in binary"
+    
+    # Check hardened runtime
+    echo "Checking hardened runtime..."
+    codesign -d --entitlements - "$source_dir/SOTAmatSkimmer" 2>/dev/null | grep -i "runtime" || echo "No runtime info found"
+    
+    # Only rename if signing succeeded
+    echo "Renaming binary to $binary_name..."
     mv "$source_dir/SOTAmatSkimmer" "$source_dir/$binary_name"
     
     # Create simple README
@@ -92,6 +171,9 @@ For help with command-line options:
 
 Note: You may need to run 'chmod +x $binary_name' after copying to a new location.
 EOL
+    
+    echo "=== Completed processing $binary_name ==="
+    echo ""
 }
 
 # Create distribution directory
@@ -99,11 +181,25 @@ mkdir -p "$SCRIPT_DIR/publish/distribution"
 
 # Process ARM64 build
 echo "Processing ARM64 build..."
-prepare_binary "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" "sotamat-arm64"
+if ! prepare_binary "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit" "sotamat-arm64"; then
+    echo "ERROR: ARM64 build processing failed. Cannot continue with notarization."
+    exit 1
+fi
 
 # Process Intel build
 echo "Processing Intel build..."
-prepare_binary "$SCRIPT_DIR/publish/mac-osx-intel-64bit" "sotamat-intel"
+if ! prepare_binary "$SCRIPT_DIR/publish/mac-osx-intel-64bit" "sotamat-intel"; then
+    echo "ERROR: Intel build processing failed. Cannot continue with notarization."
+    exit 1
+fi
+
+# Verify binaries exist before proceeding
+if [ ! -f "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/sotamat-arm64" ] || [ ! -f "$SCRIPT_DIR/publish/mac-osx-intel-64bit/sotamat-intel" ]; then
+    echo "ERROR: One or more signed binaries are missing. Cannot continue with notarization."
+    echo "ARM64 binary exists: $([ -f "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit/sotamat-arm64" ] && echo "YES" || echo "NO")"
+    echo "Intel binary exists: $([ -f "$SCRIPT_DIR/publish/mac-osx-intel-64bit/sotamat-intel" ] && echo "YES" || echo "NO")"
+    exit 1
+fi
 
 # Create ZIP archives for notarization
 echo "Creating ZIP archives for notarization..."
@@ -112,18 +208,48 @@ ditto -c -k --keepParent "$SCRIPT_DIR/publish/mac-osx-intel-64bit/sotamat-intel"
 
 # Submit for notarization
 echo "Submitting ARM64 build for notarization..."
-xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/sotamat-arm64.zip" \
+ARM64_SUBMISSION=$(xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/sotamat-arm64.zip" \
     --apple-id "$APPLE_ID" \
     --password "$APPLE_ID_PASSWORD" \
     --team-id "$APPLE_TEAM_ID" \
-    --wait
+    --wait)
+
+echo "ARM64 notarization result: $ARM64_SUBMISSION"
+
+# Extract submission ID for logging
+ARM64_ID=$(echo "$ARM64_SUBMISSION" | grep "id:" | head -1 | awk '{print $2}')
+if [ -n "$ARM64_ID" ]; then
+    echo "ARM64 submission ID: $ARM64_ID"
+    echo "Retrieving detailed notarization log..."
+    xcrun notarytool log "$ARM64_ID" \
+        --apple-id "$APPLE_ID" \
+        --password "$APPLE_ID_PASSWORD" \
+        --team-id "$APPLE_TEAM_ID" || echo "Could not retrieve log for ARM64"
+else
+    echo "Could not extract ARM64 submission ID"
+fi
 
 echo "Submitting Intel build for notarization..."
-xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/sotamat-intel.zip" \
+INTEL_SUBMISSION=$(xcrun notarytool submit "$SCRIPT_DIR/publish/distribution/sotamat-intel.zip" \
     --apple-id "$APPLE_ID" \
     --password "$APPLE_ID_PASSWORD" \
     --team-id "$APPLE_TEAM_ID" \
-    --wait
+    --wait)
+
+echo "Intel notarization result: $INTEL_SUBMISSION"
+
+# Extract submission ID for logging
+INTEL_ID=$(echo "$INTEL_SUBMISSION" | grep "id:" | head -1 | awk '{print $2}')
+if [ -n "$INTEL_ID" ]; then
+    echo "Intel submission ID: $INTEL_ID"
+    echo "Retrieving detailed notarization log..."
+    xcrun notarytool log "$INTEL_ID" \
+        --apple-id "$APPLE_ID" \
+        --password "$APPLE_ID_PASSWORD" \
+        --team-id "$APPLE_TEAM_ID" || echo "Could not retrieve log for Intel"
+else
+    echo "Could not extract Intel submission ID"
+fi
 
 # Create final distribution packages with binaries and READMEs
 echo "Creating final distribution packages..."
