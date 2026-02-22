@@ -15,9 +15,9 @@ else
     echo "Will rely on environment variables already set"
 fi
 
-# Set .NET 6 environment
-export PATH="/opt/homebrew/opt/dotnet@6/bin:$PATH"
-export DOTNET_ROOT="/opt/homebrew/opt/dotnet@6/libexec"
+# Use .NET 10 SDK (Homebrew: brew install dotnet)
+export PATH="/opt/homebrew/bin:$PATH"
+export DOTNET_ROOT="/opt/homebrew/opt/dotnet/libexec"
 
 # Check for required environment variables
 if [ -z "$DEVELOPER_CERTIFICATE_ID" ]; then
@@ -44,12 +44,13 @@ if [ -z "$APPLE_TEAM_ID" ]; then
     exit 1
 fi
 
-# Build the application for both architectures
+# Build the application for both architectures (from project directory)
+cd "$SCRIPT_DIR" || exit 1
 echo "Building application for ARM64..."
-dotnet publish -c Release -r osx-arm64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:PublishSingleFileCompression=true /p:DebugType=None -o "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit"
+dotnet publish -c Release -r osx-arm64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:PublishReadyToRun=false /p:EnableCompressionInSingleFile=false /p:DebugType=None /p:IncludeNativeLibrariesForSelfExtract=true -o "$SCRIPT_DIR/publish/mac-osx-arm-M1-64bit"
 
 echo "Building application for Intel..."
-dotnet publish -c Release -r osx-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:PublishSingleFileCompression=true /p:DebugType=None -o "$SCRIPT_DIR/publish/mac-osx-intel-64bit"
+dotnet publish -c Release -r osx-x64 --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=false /p:PublishReadyToRun=false /p:EnableCompressionInSingleFile=false /p:DebugType=None /p:IncludeNativeLibrariesForSelfExtract=true -o "$SCRIPT_DIR/publish/mac-osx-intel-64bit"
 
 # Function to sign and prepare binary
 prepare_binary() {
