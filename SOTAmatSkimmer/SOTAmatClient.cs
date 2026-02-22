@@ -42,6 +42,7 @@ namespace SOTAmatSkimmer
                     }
                     else
                     {
+                        WorkerHealthState.RecordError();
                         ConsoleHelper.SafeWriteLine($"ERROR: SOTAmat Server returned an error while authenticating user.", true, ConsoleColor.Red);
                         ConsoleHelper.SafeWriteLine("Example command line:   SOTAmatSkimmer -c AB6D -p \"MyPasswordHere\" -g CN89tn\n", false);
 
@@ -60,6 +61,7 @@ namespace SOTAmatSkimmer
             }
             catch (Exception ex)
             {
+                WorkerHealthState.RecordError();
                 ConsoleHelper.SafeWriteLine($"ERROR: failed to post message to SOTAmat Server when authenticating.", true, ConsoleColor.Red);
                 ConsoleHelper.SafeWriteLine(ex.ToString(), false);
 
@@ -137,6 +139,7 @@ namespace SOTAmatSkimmer
                     }
                     else
                     {
+                        WorkerHealthState.RecordError();
                         ConsoleHelper.SafeWriteLine("ERROR!", false, ConsoleColor.Red);
                         ConsoleHelper.SafeWrite($"ERROR: SOTAmat Server returned an error. ", true, ConsoleColor.Red);
                         var responseContent = await response.Content.ReadAsStringAsync();
@@ -147,6 +150,7 @@ namespace SOTAmatSkimmer
             }
             catch (Exception ex)
             {
+                WorkerHealthState.RecordError();
                 ConsoleHelper.SafeWriteLine("ERROR!", false, ConsoleColor.Red);
                 ConsoleHelper.SafeWriteLine("ERROR: Excelption posting to SOTAmat Server.", true, ConsoleColor.Red);
                 ConsoleHelper.SafeWriteLine(ex.ToString(), false, ConsoleColor.Yellow);

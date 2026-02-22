@@ -70,5 +70,20 @@ namespace SOTAmatSkimmer
 
         [Option("showparams", Required = false, HelpText = "Display all parameters after parsing environment variables and command line options.")]
         public bool ShowParams { get; set; } = false;
+
+        [Option("worker-mode", Required = false, Hidden = true, HelpText = "Internal option. Runs this process as worker under a supervisor.")]
+        public bool WorkerMode { get; set; } = false;
+
+        [Option("worker-pipe", Required = false, Hidden = true, HelpText = "Internal option. Named pipe identifier used by worker to report health to supervisor.")]
+        public string WorkerPipeName { get; set; } = string.Empty;
+
+        [Option("test-skip-auth", Required = false, Hidden = true, HelpText = "Internal test option. Skip SOTAmat authentication.")]
+        public bool TestSkipAuth { get; set; } = false;
+
+        [Option("test-stop-heartbeat-after-seconds", Required = false, Hidden = true, HelpText = "Internal test option. Worker stops sending supervisor heartbeats after N seconds.")]
+        public int TestStopHeartbeatAfterSeconds { get; set; } = 0;
+
+        [Option("test-supervisor-heartbeat-timeout", Required = false, Hidden = true, HelpText = "Internal test option. Override supervisor heartbeat timeout seconds.")]
+        public int TestSupervisorHeartbeatTimeoutSeconds { get; set; } = 0;
     }
 }

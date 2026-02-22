@@ -103,7 +103,7 @@ namespace SOTAmatSkimmer
             version = string.IsNullOrEmpty(version) ? "unknown" : version;
 
             // Use the version in your code.
-            Console.WriteLine($"SOTAmatSkimmer v{version}, Copyright (c) 2023-2024 Brian Mathews, AB6D. Licensed under The MIT License.");
+            Console.WriteLine($"SOTAmatSkimmer v{version}, Copyright (c) 2023-2026 Brian Mathews, AB6D. Licensed under The MIT License.");
             Console.WriteLine("     Uses library WsjtxUdpLib by Tom Fanning M0LTE,");
             Console.WriteLine("     Uses library CommandLineParser, (c) Giacomo Stelluti Scala & Contributors. The MIT License.");
             Console.WriteLine("     Uses library Newtonsoft.Json, (c) James Newton-King. The MIT License.");

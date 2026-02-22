@@ -17,6 +17,7 @@ namespace SOTAmatSkimmer
             Config = config;
             _url = $"ws://{Config.Address}:{Config.Port}/Spark";
             wsClient = new WebSocketClient(Config, _url);
+            WorkerHealthState.SetConnected(false);
         }
         public int Loop()
         {
@@ -38,6 +39,7 @@ namespace SOTAmatSkimmer
                                 try
                                 {
                                     Config.LastHeartbeat = DateTime.Now;
+                                    WorkerHealthState.RecordSourceMessage();
 
                                     int mySnr = (int)spot["snr"].Value;
                                     double myDeltaTime = spot["dt"].Value;
@@ -53,10 +55,12 @@ namespace SOTAmatSkimmer
                                                                             deltaTime: myDeltaTime,
                                                                             message: myMessage,
                                                                             deltaFrequency: myDeltaFrequency);
+                                    WorkerHealthState.RecordDecodeHandled();
 
                                 }
                                 catch (Exception e)
                                 {
+                                    WorkerHealthState.RecordError();
                                     ConsoleHelper.SafeWriteLine($"ERROR: Unable to extract required SparkSDR message parameters: {e.Message}\n", true, ConsoleColor.Red);
                                 }
 
@@ -64,6 +68,7 @@ namespace SOTAmatSkimmer
                         }
                         else
                         {
+                            WorkerHealthState.RecordError();
                             ConsoleHelper.SafeWriteLine($"WARNING: 'spots' field is missing in the received message.\n", true, ConsoleColor.Yellow);
                         }
                     }
@@ -119,6 +124,7 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Opened(object? sender, EventArgs e)
         {
+            WorkerHealthState.SetConnected(true);
             ConsoleHelper.SafeWriteLine($"SparkSDR connection established.\n", true, ConsoleColor.Green);
 
             // Subscribe to spots
@@ -127,12 +133,14 @@ namespace SOTAmatSkimmer
 
         private void WebSocket_Closed(object? sender, EventArgs e)
         {
+            WorkerHealthState.SetConnected(false);
             ConsoleHelper.SafeWriteLine($"SparkSDR connection lost. Attempting reconnect in 15 sec.\n", true, ConsoleColor.Red);
             Task.Delay(15000).ContinueWith(_ => Start());
         }
 
         private void WebSocket_Error(object? sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
+            WorkerHealthState.RecordError();
             ConsoleHelper.SafeWriteLine($"SparkSDR connect error (is it running?): {e.Exception.Message}\n", true, ConsoleColor.Red);
         }
 

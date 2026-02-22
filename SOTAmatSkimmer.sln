@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SOTAmatSkimmer", "SOTAmatSk
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WsjtxUdpLib", "libs\m0lte\WsjtxUdpLib\WsjtxUdpLib.csproj", "{16224AEA-2C1E-44C2-B395-5E63F655D03A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoakHarness", "tools\SoakHarness\SoakHarness.csproj", "{08E5F270-CB31-4E76-99B5-EADBCD7DE2D3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{16224AEA-2C1E-44C2-B395-5E63F655D03A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16224AEA-2C1E-44C2-B395-5E63F655D03A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16224AEA-2C1E-44C2-B395-5E63F655D03A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08E5F270-CB31-4E76-99B5-EADBCD7DE2D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08E5F270-CB31-4E76-99B5-EADBCD7DE2D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08E5F270-CB31-4E76-99B5-EADBCD7DE2D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08E5F270-CB31-4E76-99B5-EADBCD7DE2D3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
