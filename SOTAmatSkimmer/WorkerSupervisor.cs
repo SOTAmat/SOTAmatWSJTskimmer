@@ -270,21 +270,33 @@ namespace SOTAmatSkimmer
 
         private (string command, List<string> arguments) BuildWorkerCommand(string pipeName)
         {
-            string entryLocation = Assembly.GetEntryAssembly()?.Location ?? Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(entryLocation))
-            {
-                throw new InvalidOperationException("unable to determine entry assembly path for worker launch");
-            }
-
             List<string> childArgs = BuildChildArgs(pipeName);
-            if (entryLocation.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            string? processPath = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(processPath))
             {
-                List<string> dotnetArgs = new() { entryLocation };
-                dotnetArgs.AddRange(childArgs);
-                return ("dotnet", dotnetArgs);
+                processPath = Process.GetCurrentProcess().MainModule?.FileName;
             }
 
-            return (entryLocation, childArgs);
+            if (!string.IsNullOrWhiteSpace(processPath) &&
+                !processPath.EndsWith("dotnet", StringComparison.OrdinalIgnoreCase) &&
+                !processPath.EndsWith("dotnet.exe", StringComparison.OrdinalIgnoreCase))
+            {
+                return (processPath, childArgs);
+            }
+
+            string? entryAssemblyName = Assembly.GetEntryAssembly()?.GetName().Name;
+            if (!string.IsNullOrWhiteSpace(entryAssemblyName))
+            {
+                string entryDllPath = Path.Combine(AppContext.BaseDirectory, $"{entryAssemblyName}.dll");
+                if (File.Exists(entryDllPath))
+                {
+                    List<string> dotnetArgs = new() { entryDllPath };
+                    dotnetArgs.AddRange(childArgs);
+                    return (string.IsNullOrWhiteSpace(processPath) ? "dotnet" : processPath, dotnetArgs);
+                }
+            }
+
+            throw new InvalidOperationException("unable to determine entry assembly path for worker launch");
         }
 
         private List<string> BuildChildArgs(string pipeName)

@@ -4,18 +4,18 @@ namespace SOTAmatSkimmer
     {
         static int Main(string[] args)
         {
-            ArgumentParser.PrintVersion();
-
             Configuration config = ArgumentParser.Parse(args);
-
-            if (config.ShowParams)
-            {
-                ShowConfig(config);
-            }
 
             if (config.WorkerMode)
             {
                 return RunWorker(config);
+            }
+
+            ArgumentParser.PrintVersion();
+
+            if (config.ShowParams)
+            {
+                ShowConfig(config);
             }
 
             WorkerSupervisor supervisor = new(config, args);
@@ -97,8 +97,6 @@ namespace SOTAmatSkimmer
 
         private static int RunLooper(Configuration config)
         {
-            Console.WriteLine("[type CTRL-C to exit]\n");
-
             if (config.SparkSDRmode)
             {
                 SparkSDRlooper myLooper = new(config);
