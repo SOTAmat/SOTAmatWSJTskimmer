@@ -57,6 +57,7 @@ namespace SOTAmatSkimmer
 
                 Task stdoutTask = PumpProcessOutput(worker.StandardOutput, "[worker]", runCts.Token);
                 Task stderrTask = PumpProcessOutput(worker.StandardError, "[worker:err]", runCts.Token);
+                Task? readTask = null;
 
                 try
                 {
@@ -86,7 +87,7 @@ namespace SOTAmatSkimmer
                         continue;
                     }
 
-                    Task readTask = Task.Run(async () =>
+                    readTask = Task.Run(async () =>
                     {
                         using StreamReader reader = new(pipeServer);
                         while (!runCts.Token.IsCancellationRequested)
@@ -162,7 +163,7 @@ namespace SOTAmatSkimmer
                 finally
                 {
                     runCts.Cancel();
-                    WaitAllQuietly(stdoutTask, stderrTask);
+                    WaitAllQuietly(stdoutTask, stderrTask, readTask);
                 }
             }
 
@@ -416,10 +417,15 @@ namespace SOTAmatSkimmer
             }
         }
 
-        private static void WaitAllQuietly(params Task[] tasks)
+        private static void WaitAllQuietly(params Task?[] tasks)
         {
-            foreach (Task task in tasks)
+            foreach (Task? task in tasks)
             {
+                if (task is null)
+                {
+                    continue;
+                }
+
                 try
                 {
                     task.Wait(TimeSpan.FromSeconds(1));
