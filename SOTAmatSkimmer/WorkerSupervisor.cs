@@ -57,8 +57,6 @@ namespace SOTAmatSkimmer
                 bool workerConnected = false;
                 string workerMode = config.SparkSDRmode ? "sparksdr" : "wsjt";
 
-                Task? stdoutTask = null;
-                Task? stderrTask = null;
                 Task? readTask = null;
 
                 try
@@ -73,7 +71,6 @@ namespace SOTAmatSkimmer
                         SupervisorWriteLine("Restarting worker because IPC connection was not established.", true, ConsoleColor.Yellow);
                         StopWorker(worker);
                         runCts.Cancel();
-                        WaitAllQuietly(stdoutTask, stderrTask);
 
                         restartAttempt++;
                         RegisterRestart();
@@ -135,14 +132,14 @@ namespace SOTAmatSkimmer
                     {
                         StopWorker(worker);
                         runCts.Cancel();
-                        WaitAllQuietly(stdoutTask, stderrTask, readTask);
+                        WaitAllQuietly(readTask);
                         return 0;
                     }
 
                     SupervisorWriteLine($"Restarting worker. Reason: {reason}", true, ConsoleColor.Yellow);
                     StopWorker(worker);
                     runCts.Cancel();
-                    WaitAllQuietly(stdoutTask, stderrTask, readTask);
+                    WaitAllQuietly(readTask);
 
                     if (worker.ExitCode == 2)
                     {
@@ -165,7 +162,7 @@ namespace SOTAmatSkimmer
                 finally
                 {
                     runCts.Cancel();
-                    WaitAllQuietly(stdoutTask, stderrTask, readTask);
+                    WaitAllQuietly(readTask);
                 }
             }
 
@@ -200,9 +197,13 @@ namespace SOTAmatSkimmer
             Func<string> getWorkerMode,
             CancellationToken token)
         {
+#if DEBUG
             int heartbeatTimeout = config.TestSupervisorHeartbeatTimeoutSeconds > 0
                 ? config.TestSupervisorHeartbeatTimeoutSeconds
                 : WorkerHeartbeatTimeoutSeconds;
+#else
+            int heartbeatTimeout = WorkerHeartbeatTimeoutSeconds;
+#endif
             int sourceStaleTimeout = WorkerSourceStaleTimeoutWsjtSeconds;
 
             while (!token.IsCancellationRequested)
@@ -355,7 +356,7 @@ namespace SOTAmatSkimmer
 
         private bool ExceededRestartPolicy()
         {
-            return restartTimesUtc.Count > MaxWorkerRestarts;
+            return restartTimesUtc.Count >= MaxWorkerRestarts;
         }
 
         private static int GetRestartDelaySeconds(int attempt)

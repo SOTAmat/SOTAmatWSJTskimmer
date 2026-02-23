@@ -478,3 +478,7 @@ $RECYCLE.BIN/
 
 # macOS signing environment variables
 **/sign-macos-builds.env
+
+# AI-generated planning/design markdown files
+PLAN_*.md
+*_PLAN.md

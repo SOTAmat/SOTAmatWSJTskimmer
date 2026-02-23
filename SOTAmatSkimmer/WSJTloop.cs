@@ -9,7 +9,7 @@ namespace SOTAmatSkimmer
     public class WsjtxLooper
     {
         Configuration Config { get; set; }
-        private bool connected = false;
+        private volatile bool connected = false;
         private WsjtxClient? client;
         private CancellationTokenSource? cts;
         private Task? clientTask;
@@ -290,6 +290,8 @@ namespace SOTAmatSkimmer
                     ConsoleHelper.SafeWriteLine("WARNING: Client task did not complete within timeout. Recovery will continue via main reconnect loop.", true, ConsoleColor.DarkYellow);
                     if (Config.WorkerMode)
                     {
+                        // Intentional hard exit: bypasses finally blocks so the supervisor can
+                        // detect the worker death and spawn a clean replacement process.
                         WorkerHealthState.RecordError();
                         ConsoleHelper.SafeWriteLine("ERROR: WSJT cleanup exceeded timeout in worker mode. Exiting worker so supervisor can restart it.", true, ConsoleColor.Red);
                         Environment.Exit(1);

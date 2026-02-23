@@ -54,7 +54,12 @@ namespace SOTAmatSkimmer
                 AutoFlush = true
             };
 
-            WorkerIpcReporter reporter = new(localPipe, localWriter, config.TestStopHeartbeatAfterSeconds);
+#if DEBUG
+            int stopHeartbeat = config.TestStopHeartbeatAfterSeconds;
+#else
+            int stopHeartbeat = 0;
+#endif
+            WorkerIpcReporter reporter = new(localPipe, localWriter, stopHeartbeat);
             reporter.PublishEvent("worker-started", $"Worker process started for mode {(config.SparkSDRmode ? "SparkSDR" : "WSJT-X")}.");
             return reporter;
         }

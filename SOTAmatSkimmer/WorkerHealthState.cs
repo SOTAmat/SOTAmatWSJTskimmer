@@ -70,8 +70,14 @@ namespace SOTAmatSkimmer
                     LastSourceMessageUtc: lastSourceMessageUtc,
                     LastDecodeHandledUtc: lastDecodeHandledUtc,
                     ErrorCount: errorCount,
-                    WorkingSetBytes: Process.GetCurrentProcess().WorkingSet64);
+                    WorkingSetBytes: GetWorkingSetBytes());
             }
+        }
+
+        private static long GetWorkingSetBytes()
+        {
+            using Process proc = Process.GetCurrentProcess();
+            return proc.WorkingSet64;
         }
     }
 

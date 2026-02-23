@@ -75,10 +75,12 @@ namespace SOTAmatSkimmer
 
         private static bool ValidateAndAuthenticate(Configuration config, bool pauseOnFailure)
         {
+#if DEBUG
             if (config.TestSkipAuth)
             {
                 return true;
             }
+#endif
 
             if (config.ValidParse && SOTAmatClient.Authenticate(config).Result)
             {

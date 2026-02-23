@@ -144,7 +144,7 @@ namespace SOTAmatSkimmer
             {
                 WorkerHealthState.RecordError();
                 ConsoleHelper.SafeWriteLine("ERROR!", false, ConsoleColor.Red);
-                ConsoleHelper.SafeWriteLine("ERROR: Excelption posting to SOTAmat Server.", true, ConsoleColor.Red);
+                ConsoleHelper.SafeWriteLine("ERROR: Exception posting to SOTAmat Server.", true, ConsoleColor.Red);
                 ConsoleHelper.SafeWriteLine(ex.ToString(), false, ConsoleColor.Yellow);
                 return;
             }

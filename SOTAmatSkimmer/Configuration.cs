@@ -1,4 +1,4 @@
-﻿using CommandLine;
+using CommandLine;
 
 namespace SOTAmatSkimmer
 {
@@ -77,6 +77,7 @@ namespace SOTAmatSkimmer
         [Option("worker-pipe", Required = false, Hidden = true, HelpText = "Internal option. Named pipe identifier used by worker to report health to supervisor.")]
         public string WorkerPipeName { get; set; } = string.Empty;
 
+#if DEBUG
         [Option("test-skip-auth", Required = false, Hidden = true, HelpText = "Internal test option. Skip SOTAmat authentication.")]
         public bool TestSkipAuth { get; set; } = false;
 
@@ -85,5 +86,6 @@ namespace SOTAmatSkimmer
 
         [Option("test-supervisor-heartbeat-timeout", Required = false, Hidden = true, HelpText = "Internal test option. Override supervisor heartbeat timeout seconds.")]
         public int TestSupervisorHeartbeatTimeoutSeconds { get; set; } = 0;
+#endif
     }
 }
