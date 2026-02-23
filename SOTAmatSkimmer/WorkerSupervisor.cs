@@ -13,6 +13,8 @@ namespace SOTAmatSkimmer
         private const int WorkerSourceStaleTimeoutWsjtSeconds = 120;
         private const int MaxWorkerRestarts = 10;
         private const int RestartWindowSeconds = 300;
+        private const int UnixDomainSocketPathMaxLength = 104;
+        private const string UnixPipePrefix = "CoreFxPipe_";
 
         private readonly Configuration config;
         private readonly string[] originalArgs;
@@ -43,7 +45,7 @@ namespace SOTAmatSkimmer
             int restartAttempt = 0;
             while (!shutdownCts.IsCancellationRequested)
             {
-                string pipeName = $"sotamat-worker-{Environment.ProcessId}-{Guid.NewGuid():N}";
+                string pipeName = BuildWorkerPipeName();
                 using NamedPipeServerStream pipeServer = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
                 using Process worker = StartWorkerProcess(pipeName);
 
@@ -387,6 +389,42 @@ namespace SOTAmatSkimmer
             int[] schedule = { 1, 2, 5, 10, 20 };
             int idx = Math.Min(attempt - 1, schedule.Length - 1);
             return schedule[idx];
+        }
+
+        private static string BuildWorkerPipeName()
+        {
+            // Keep the identifier short enough for Unix-domain socket path limits.
+            string randomSuffix = Guid.NewGuid().ToString("N")[..8];
+            string pipeName = $"sm-{Environment.ProcessId:x}-{randomSuffix}";
+
+            if (OperatingSystem.IsWindows())
+            {
+                return pipeName;
+            }
+
+            int maxPipeNameLength = GetUnixPipeNameLengthLimit();
+            if (pipeName.Length <= maxPipeNameLength)
+            {
+                return pipeName;
+            }
+
+            string compactPipeName = $"s{Environment.ProcessId:x}{randomSuffix}";
+            if (compactPipeName.Length <= maxPipeNameLength)
+            {
+                return compactPipeName;
+            }
+
+            return compactPipeName[..Math.Max(1, maxPipeNameLength)];
+        }
+
+        private static int GetUnixPipeNameLengthLimit()
+        {
+            string tempPath = Path.GetTempPath();
+            bool needsSeparator = !tempPath.EndsWith(Path.DirectorySeparatorChar) &&
+                                  !tempPath.EndsWith(Path.AltDirectorySeparatorChar);
+            int separatorLength = needsSeparator ? 1 : 0;
+            int maxPipeNameLength = UnixDomainSocketPathMaxLength - tempPath.Length - separatorLength - UnixPipePrefix.Length;
+            return Math.Max(1, maxPipeNameLength);
         }
 
         private static void StopWorker(Process worker)
