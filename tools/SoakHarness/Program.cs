@@ -28,7 +28,7 @@ internal static class Program
         "Only one usage of each socket address (protocol/network address/port)"
     };
 
-    private static readonly Regex WorkerStartedRegex = new(@"Supervisor started worker PID (\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex WorkerStartedRegex = new(@"Started worker PID (\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private enum MarkerType
     {

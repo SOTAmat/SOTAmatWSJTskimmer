@@ -62,9 +62,9 @@ Optional supervisor-check args:
 ## Expected Results
 
 Worker-exit restart check passes when all are true:
-- Supervisor logs an initial worker start: `Supervisor started worker PID <pid1>`.
+- Supervisor logs an initial worker start: `[Supervisor] Started worker PID <pid1>.`.
 - Harness kills `<pid1>`.
-- Supervisor logs a replacement worker with a different PID: `Supervisor started worker PID <pid2>`.
+- Supervisor logs a replacement worker with a different PID: `[Supervisor] Started worker PID <pid2>.`.
 - Harness prints: `supervisor restart-by-exit check: PASS`.
 
 Heartbeat-stall restart check passes when all are true:

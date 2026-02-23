@@ -288,6 +288,12 @@ namespace SOTAmatSkimmer
                 if (!taskCompleted)
                 {
                     ConsoleHelper.SafeWriteLine("WARNING: Client task did not complete within timeout. Recovery will continue via main reconnect loop.", true, ConsoleColor.DarkYellow);
+                    if (Config.WorkerMode)
+                    {
+                        WorkerHealthState.RecordError();
+                        ConsoleHelper.SafeWriteLine("ERROR: WSJT cleanup exceeded timeout in worker mode. Exiting worker so supervisor can restart it.", true, ConsoleColor.Red);
+                        Environment.Exit(1);
+                    }
                 }
             }
 
