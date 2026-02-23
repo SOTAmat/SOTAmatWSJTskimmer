@@ -160,7 +160,7 @@ namespace SOTAmatSkimmer
 
         private static void ReportDeltaTime(Configuration config, double deltaTime)
         {
-            (double average, int sampleCount) = UpdateAverageDeltaTime(deltaTime);
+            double average = UpdateAverageDeltaTime(deltaTime);
             if (!ShowDeltaTime)
             {
                 return;
@@ -169,15 +169,15 @@ namespace SOTAmatSkimmer
             ConsoleColor deltaColor = Math.Abs(average) > 0.5 ? ConsoleColor.Red : ConsoleColor.Green;
             if (Console.IsOutputRedirected)
             {
-                ConsoleHelper.SafeWriteLine($"FT8 DeltaTime {deltaTime:+0.00;-0.00} s (avg {sampleCount}: {average:+0.00;-0.00} s)", true, deltaColor);
+                ConsoleHelper.SafeWriteLine($"FT8 DeltaTime {deltaTime:+0.00;-0.00} s (avg {average:+0.00;-0.00} s)", true, deltaColor);
                 return;
             }
 
-            ConsoleHelper.SafeWrite($" Average DeltaTime: {average:+0.00;-0.00} ({sampleCount,3})      ", false, deltaColor, true);
+            ConsoleHelper.SafeWrite($" Average DeltaTime: {average:+0.00;-0.00}      ", false, deltaColor, true);
         }
 
 
-        private static (double Average, int SampleCount) UpdateAverageDeltaTime(double deltaTime)
+        private static double UpdateAverageDeltaTime(double deltaTime)
         {
             lock (_lockObject)
             {
@@ -187,7 +187,7 @@ namespace SOTAmatSkimmer
                 deltaTimeAccumulator += deltaTime;
 
                 deltaTimeAverage = deltaTimeAccumulator / (double)deltaTimeBuffer.Count;
-                return (deltaTimeAverage, deltaTimeBuffer.Count);
+                return deltaTimeAverage;
             }
         }
 
