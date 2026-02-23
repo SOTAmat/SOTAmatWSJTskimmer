@@ -80,15 +80,7 @@ namespace SOTAmatSkimmer
         {
             if (config.Debug) ConsoleHelper.SafeWriteLine($"Debug: Message received: {message}\n");
 
-            // Update the average DeltaTime we are seeing from these reception reports
-            if (!Console.IsOutputRedirected)
-            {
-                UpdateAverageDeltaTime(deltaTime);
-                if (ShowDeltaTime)
-                {
-                    ConsoleHelper.SafeWrite($" Average DeltaTime: {deltaTimeAverage.ToString("+0.00;-0.00")}      ", false, Math.Abs(deltaTimeAverage) > 0.5 ? ConsoleColor.Red : ConsoleColor.Green, true);
-                }
-            }
+            ReportDeltaTime(config, deltaTime);
 
             // If the statusMsg is a potential SOTAmat statusMsg, send it to the SOTAmat server
             string pattern = @"^(S(T(M(T)?)?|OTAM(T|AT)?)?M?)\s([0-9A-Z]{1,2}[0-9][0-9A-Z]{1,3})(/[0-9A-Z]{1,4})+$";
@@ -166,7 +158,26 @@ namespace SOTAmatSkimmer
         private static double deltaTimeAccumulator = 0.0;
 
 
-        private static double UpdateAverageDeltaTime(double deltaTime)
+        private static void ReportDeltaTime(Configuration config, double deltaTime)
+        {
+            (double average, int sampleCount) = UpdateAverageDeltaTime(deltaTime);
+            if (!ShowDeltaTime)
+            {
+                return;
+            }
+
+            ConsoleColor deltaColor = Math.Abs(average) > 0.5 ? ConsoleColor.Red : ConsoleColor.Green;
+            if (Console.IsOutputRedirected)
+            {
+                ConsoleHelper.SafeWriteLine($"FT8 DeltaTime {deltaTime:+0.00;-0.00} s (avg {sampleCount}: {average:+0.00;-0.00} s)", true, deltaColor);
+                return;
+            }
+
+            ConsoleHelper.SafeWrite($" Average DeltaTime: {average:+0.00;-0.00} ({sampleCount,3})      ", false, deltaColor, true);
+        }
+
+
+        private static (double Average, int SampleCount) UpdateAverageDeltaTime(double deltaTime)
         {
             lock (_lockObject)
             {
@@ -176,7 +187,7 @@ namespace SOTAmatSkimmer
                 deltaTimeAccumulator += deltaTime;
 
                 deltaTimeAverage = deltaTimeAccumulator / (double)deltaTimeBuffer.Count;
-                return deltaTimeAverage;
+                return (deltaTimeAverage, deltaTimeBuffer.Count);
             }
         }
 

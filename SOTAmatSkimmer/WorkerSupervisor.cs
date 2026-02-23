@@ -33,7 +33,7 @@ namespace SOTAmatSkimmer
 
         public int Run()
         {
-            ConsoleHelper.SafeWriteLine("Process isolation enabled. Starting supervisor mode.", true, ConsoleColor.Cyan);
+            SupervisorWriteLine("Process isolation enabled. Starting supervisor mode.", true, ConsoleColor.Cyan);
 
             using CancellationTokenSource shutdownCts = new();
             Console.CancelKeyPress += (_, e) =>
@@ -49,7 +49,7 @@ namespace SOTAmatSkimmer
                 using NamedPipeServerStream pipeServer = new(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
                 using Process worker = StartWorkerProcess(pipeName);
 
-                ConsoleHelper.SafeWriteLine($"Supervisor started worker PID {worker.Id}.", true, ConsoleColor.Green);
+                SupervisorWriteLine($"Started worker PID {worker.Id}.", true, ConsoleColor.Green);
                 using CancellationTokenSource runCts = CancellationTokenSource.CreateLinkedTokenSource(shutdownCts.Token);
 
                 DateTime lastHeartbeatUtc = DateTime.UtcNow;
@@ -57,8 +57,8 @@ namespace SOTAmatSkimmer
                 bool workerConnected = false;
                 string workerMode = config.SparkSDRmode ? "sparksdr" : "wsjt";
 
-                Task stdoutTask = PumpProcessOutput(worker.StandardOutput, "[worker]", runCts.Token);
-                Task stderrTask = PumpProcessOutput(worker.StandardError, "[worker:err]", runCts.Token);
+                Task? stdoutTask = null;
+                Task? stderrTask = null;
                 Task? readTask = null;
 
                 try
@@ -70,7 +70,7 @@ namespace SOTAmatSkimmer
                             return 0;
                         }
 
-                        ConsoleHelper.SafeWriteLine("Supervisor restarting worker because IPC connection was not established.", true, ConsoleColor.Yellow);
+                        SupervisorWriteLine("Restarting worker because IPC connection was not established.", true, ConsoleColor.Yellow);
                         StopWorker(worker);
                         runCts.Cancel();
                         WaitAllQuietly(stdoutTask, stderrTask);
@@ -79,12 +79,12 @@ namespace SOTAmatSkimmer
                         RegisterRestart();
                         if (ExceededRestartPolicy())
                         {
-                            ConsoleHelper.SafeWriteLine($"Exceeded max worker restarts ({MaxWorkerRestarts}) within {RestartWindowSeconds} seconds. Stopping.", true, ConsoleColor.Red);
+                            SupervisorWriteLine($"Exceeded max worker restarts ({MaxWorkerRestarts}) within {RestartWindowSeconds} seconds. Stopping.", true, ConsoleColor.Red);
                             return 1;
                         }
 
                         int initialDelaySeconds = GetRestartDelaySeconds(restartAttempt);
-                        ConsoleHelper.SafeWriteLine($"Supervisor backoff delay: {initialDelaySeconds} second(s) before next worker start.", true, ConsoleColor.DarkYellow);
+                        SupervisorWriteLine($"Backoff delay: {initialDelaySeconds} second(s) before next worker start.", true, ConsoleColor.DarkYellow);
                         SleepWithCancellation(TimeSpan.FromSeconds(initialDelaySeconds), shutdownCts.Token);
                         continue;
                     }
@@ -125,7 +125,7 @@ namespace SOTAmatSkimmer
 
                             if (!string.Equals(msg.MessageType, "heartbeat", StringComparison.OrdinalIgnoreCase))
                             {
-                                ConsoleHelper.SafeWriteLine($"Worker event: {msg.MessageType} {msg.Detail}", true, ConsoleColor.DarkCyan);
+                                SupervisorWriteLine($"Worker event: {msg.MessageType} {msg.Detail}", true, ConsoleColor.DarkCyan);
                             }
                         }
                     }, runCts.Token);
@@ -139,14 +139,14 @@ namespace SOTAmatSkimmer
                         return 0;
                     }
 
-                    ConsoleHelper.SafeWriteLine($"Supervisor restarting worker. Reason: {reason}", true, ConsoleColor.Yellow);
+                    SupervisorWriteLine($"Restarting worker. Reason: {reason}", true, ConsoleColor.Yellow);
                     StopWorker(worker);
                     runCts.Cancel();
                     WaitAllQuietly(stdoutTask, stderrTask, readTask);
 
                     if (worker.ExitCode == 2)
                     {
-                        ConsoleHelper.SafeWriteLine("Worker exited due to configuration/authentication failure. Stopping supervisor.", true, ConsoleColor.Red);
+                        SupervisorWriteLine("Worker exited due to configuration/authentication failure. Stopping supervisor.", true, ConsoleColor.Red);
                         return 2;
                     }
 
@@ -154,12 +154,12 @@ namespace SOTAmatSkimmer
                     RegisterRestart();
                     if (ExceededRestartPolicy())
                     {
-                        ConsoleHelper.SafeWriteLine($"Exceeded max worker restarts ({MaxWorkerRestarts}) within {RestartWindowSeconds} seconds. Stopping.", true, ConsoleColor.Red);
+                        SupervisorWriteLine($"Exceeded max worker restarts ({MaxWorkerRestarts}) within {RestartWindowSeconds} seconds. Stopping.", true, ConsoleColor.Red);
                         return 1;
                     }
 
                     int delaySeconds = GetRestartDelaySeconds(restartAttempt);
-                    ConsoleHelper.SafeWriteLine($"Supervisor backoff delay: {delaySeconds} second(s) before next worker start.", true, ConsoleColor.DarkYellow);
+                    SupervisorWriteLine($"Backoff delay: {delaySeconds} second(s) before next worker start.", true, ConsoleColor.DarkYellow);
                     SleepWithCancellation(TimeSpan.FromSeconds(delaySeconds), shutdownCts.Token);
                 }
                 finally
@@ -179,7 +179,7 @@ namespace SOTAmatSkimmer
                 pipeServer.WaitForConnectionAsync(token).Wait(TimeSpan.FromSeconds(20));
                 if (!pipeServer.IsConnected)
                 {
-                    ConsoleHelper.SafeWriteLine("Worker IPC pipe connection timed out.", true, ConsoleColor.Red);
+                    SupervisorWriteLine("Worker IPC pipe connection timed out.", true, ConsoleColor.Red);
                     return false;
                 }
 
@@ -187,7 +187,7 @@ namespace SOTAmatSkimmer
             }
             catch (Exception ex)
             {
-                ConsoleHelper.SafeWriteLine($"Worker IPC connection error: {ex.Message}", true, ConsoleColor.Red);
+                SupervisorWriteLine($"Worker IPC connection error: {ex.Message}", true, ConsoleColor.Red);
                 return false;
             }
         }
@@ -241,7 +241,7 @@ namespace SOTAmatSkimmer
             }
             catch
             {
-                ConsoleHelper.SafeWriteLine($"WARNING: Unable to parse worker IPC message: {line}", true, ConsoleColor.DarkYellow);
+                SupervisorWriteLine($"WARNING: Unable to parse worker IPC message: {line}", true, ConsoleColor.DarkYellow);
                 return null;
             }
         }
@@ -252,8 +252,8 @@ namespace SOTAmatSkimmer
             ProcessStartInfo psi = new(command)
             {
                 UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
                 CreateNoWindow = true
             };
 
@@ -342,32 +342,6 @@ namespace SOTAmatSkimmer
             return args;
         }
 
-        private static Task PumpProcessOutput(StreamReader reader, string prefix, CancellationToken token)
-        {
-            return Task.Run(async () =>
-            {
-                while (!token.IsCancellationRequested)
-                {
-                    string? line;
-                    try
-                    {
-                        line = await reader.ReadLineAsync().WaitAsync(token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
-
-                    if (line is null)
-                    {
-                        return;
-                    }
-
-                    ConsoleHelper.SafeWriteLine($"{prefix} {line}", true, ConsoleColor.Gray);
-                }
-            }, token);
-        }
-
         private void RegisterRestart()
         {
             DateTime now = DateTime.UtcNow;
@@ -439,8 +413,13 @@ namespace SOTAmatSkimmer
             }
             catch (Exception ex)
             {
-                ConsoleHelper.SafeWriteLine($"WARNING: Failed stopping worker process cleanly: {ex.Message}", true, ConsoleColor.DarkYellow);
+                SupervisorWriteLine($"WARNING: Failed stopping worker process cleanly: {ex.Message}", true, ConsoleColor.DarkYellow);
             }
+        }
+
+        private static void SupervisorWriteLine(string message = "", bool dateStamp = true, ConsoleColor? color = null)
+        {
+            ConsoleHelper.SafeWriteLine($"[Supervisor] {message}", dateStamp, color);
         }
 
         private static void SleepWithCancellation(TimeSpan duration, CancellationToken token)
