@@ -31,6 +31,7 @@ namespace SOTAmatSkimmer
             Console.WriteLine($"Address: {config.Address}");
             Console.WriteLine($"Port: {config.Port}");
             Console.WriteLine($"Multicast: {config.Multicast}");
+            Console.WriteLine($"Multicast Interface: '{config.MulticastInterface}'");
             Console.WriteLine($"SparkSDR Mode: {config.SparkSDRmode}");
             Console.WriteLine($"Debug: {config.Debug}");
             Console.WriteLine($"Logging: {config.Logging}");
@@ -50,6 +51,11 @@ namespace SOTAmatSkimmer
             WorkerIpcReporter? reporter = null;
             try
             {
+                if (config.ShowParams)
+                {
+                    ShowConfig(config);
+                }
+
                 reporter = WorkerIpcReporter.Start(config);
                 if (!ValidateAndAuthenticate(config, pauseOnFailure: false))
                 {

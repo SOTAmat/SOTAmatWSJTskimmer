@@ -32,7 +32,7 @@ namespace SOTAmatSkimmer
 
                 while (true)
                 {
-                    Console.WriteLine($"Connecting {Config.Callsign} to {(Config.SparkSDRmode ? "SparkSDR" : "WSJT-X")} via {(Config.Multicast ? "multicast" : "direct")} {(Config.SparkSDRmode ? "websocket" : "UDP")} at {Config.Address} with grid {Config.Gridsquare}:\n");
+                    Console.WriteLine($"Connecting {Config.Callsign} to {(Config.SparkSDRmode ? "SparkSDR" : "WSJT-X")} via {(Config.Multicast ? "multicast" : "direct")} {(Config.SparkSDRmode ? "websocket" : "UDP")} at {Config.Address}:{Config.Port} with grid {Config.Gridsquare}:\n");
                     Console.WriteLine();
 
                     ConnectAndLoop();
@@ -121,7 +121,32 @@ namespace SOTAmatSkimmer
             WsjtxClient? localClient = null;
             try
             {
-                localClient = new WsjtxClient(OnWsjtxMessage, ipAddress: IPAddress.Parse(Config.Address), port: Config.Port, multicast: Config.Multicast, debug: Config.Logging);
+                IPAddress wsjtAddress = IPAddress.Parse(Config.Address);
+                IPAddress? multicastLocalAddress = null;
+
+                if (Config.Multicast)
+                {
+                    multicastLocalAddress = MulticastInterfaceResolver.ResolveIPv4Address(Config.MulticastInterface);
+                    if (Config.Debug)
+                    {
+                        ConsoleHelper.SafeWriteLine($"WSJT network debug: target multicast group {Config.Address}:{Config.Port}", true, ConsoleColor.Cyan);
+                        ConsoleHelper.SafeWriteLine(
+                            $"WSJT network debug: multicast join interface = {MulticastInterfaceResolver.DescribeSelection(Config.MulticastInterface)}",
+                            false,
+                            ConsoleColor.Cyan);
+                        ConsoleHelper.SafeWriteLine("WSJT network debug: available IPv4 interfaces:", false, ConsoleColor.Cyan);
+                        ConsoleHelper.SafeWriteLine(MulticastInterfaceResolver.DescribeAvailableIPv4Interfaces(), false, ConsoleColor.Cyan);
+                    }
+                }
+
+                localClient = new WsjtxClient(
+                    OnWsjtxMessage,
+                    ipAddress: wsjtAddress,
+                    port: Config.Port,
+                    multicast: Config.Multicast,
+                    debug: Config.Debug,
+                    multicastLocalAddress: multicastLocalAddress,
+                    trace: Config.Debug ? TraceNetworkMessage : null);
 
                 lock (stateLock)
                 {
@@ -179,7 +204,12 @@ namespace SOTAmatSkimmer
                 {
                     connected = true;
                     WorkerHealthState.SetConnected(true);
-                    ConsoleHelper.SafeWriteLine("Connected to WSJT-X! Listening for SOTAMAT messages...\n", true, ConsoleColor.Green);
+                    ConsoleHelper.SafeWriteLine($"Connected to WSJT-X from {from.Address}:{from.Port}! Listening for SOTAMAT messages...\n", true, ConsoleColor.Green);
+                }
+
+                if (Config.Debug)
+                {
+                    ConsoleHelper.SafeWriteLine($"WSJT network debug: received {msg.GetType().Name} from {from.Address}:{from.Port}.", false, ConsoleColor.DarkGray);
                 }
 
                 if (msg is StatusMessage statusMsg)
@@ -301,6 +331,11 @@ namespace SOTAmatSkimmer
 
             int reconnectSeconds = Math.Max(1, Config.ReconnectIntervalSeconds);
             ConsoleHelper.SafeWriteLine($"Cleanup complete. Main loop will attempt reconnect in {reconnectSeconds} sec.", true, ConsoleColor.Yellow);
+        }
+
+        private static void TraceNetworkMessage(string message)
+        {
+            ConsoleHelper.SafeWriteLine($"WSJT network debug: {message}", true, ConsoleColor.DarkCyan);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace SOTAmatSkimmer
             {
                 if (arg.Contains('='))
                 {
-                    var parts = arg.Split('=');
+                    var parts = arg.Split('=', 2);
                     processedArgs.Add(parts[0]);
                     processedArgs.Add(parts[1]);
                 }

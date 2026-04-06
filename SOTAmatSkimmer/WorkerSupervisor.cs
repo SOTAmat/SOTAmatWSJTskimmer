@@ -58,6 +58,8 @@ namespace SOTAmatSkimmer
                 string workerMode = config.SparkSDRmode ? "sparksdr" : "wsjt";
 
                 Task? readTask = null;
+                Task? outputTask = PumpWorkerStdoutAsync(worker.StandardOutput, runCts.Token);
+                Task? errorTask = PumpWorkerStderrAsync(worker.StandardError, runCts.Token);
 
                 try
                 {
@@ -71,6 +73,7 @@ namespace SOTAmatSkimmer
                         SupervisorWriteLine("Restarting worker because IPC connection was not established.", true, ConsoleColor.Yellow);
                         StopWorker(worker);
                         runCts.Cancel();
+                        WaitAllQuietly(outputTask, errorTask);
 
                         restartAttempt++;
                         RegisterRestart();
@@ -132,14 +135,14 @@ namespace SOTAmatSkimmer
                     {
                         StopWorker(worker);
                         runCts.Cancel();
-                        WaitAllQuietly(readTask);
+                        WaitAllQuietly(readTask, outputTask, errorTask);
                         return 0;
                     }
 
                     SupervisorWriteLine($"Restarting worker. Reason: {reason}", true, ConsoleColor.Yellow);
                     StopWorker(worker);
                     runCts.Cancel();
-                    WaitAllQuietly(readTask);
+                    WaitAllQuietly(readTask, outputTask, errorTask);
 
                     if (worker.ExitCode == 2)
                     {
@@ -162,7 +165,7 @@ namespace SOTAmatSkimmer
                 finally
                 {
                     runCts.Cancel();
-                    WaitAllQuietly(readTask);
+                    WaitAllQuietly(readTask, outputTask, errorTask);
                 }
             }
 
@@ -253,8 +256,8 @@ namespace SOTAmatSkimmer
             ProcessStartInfo psi = new(command)
             {
                 UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 CreateNoWindow = true
             };
 
@@ -270,6 +273,67 @@ namespace SOTAmatSkimmer
             }
 
             return process;
+        }
+
+        private static Task PumpWorkerStdoutAsync(StreamReader reader, CancellationToken token)
+        {
+            return Task.Run(async () =>
+            {
+                char[] buffer = new char[256];
+                while (!token.IsCancellationRequested)
+                {
+                    int charsRead;
+                    try
+                    {
+                        charsRead = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return;
+                    }
+
+                    if (charsRead == 0)
+                    {
+                        return;
+                    }
+
+                    ConsoleHelper.SafeWriteRaw(new string(buffer, 0, charsRead));
+                }
+            }, token);
+        }
+
+        private static Task PumpWorkerStderrAsync(StreamReader reader, CancellationToken token)
+        {
+            return Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    string? line;
+                    try
+                    {
+                        line = await reader.ReadLineAsync().WaitAsync(token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return;
+                    }
+
+                    if (line is null)
+                    {
+                        return;
+                    }
+
+                    ConsoleHelper.SafeWriteLine($"[Worker stderr] {line}", false, ConsoleColor.DarkYellow);
+                }
+            }, token);
         }
 
         private (string command, List<string> arguments) BuildWorkerCommand(string pipeName)

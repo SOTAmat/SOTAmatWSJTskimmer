@@ -35,6 +35,9 @@ namespace SOTAmatSkimmer
         [Option('m', "multicast", Required = false, HelpText = "Connect to the server via Multicast protocol. Default: False")]
         public bool Multicast { get; set; } = false;
 
+        [Option("multicast-interface", Required = false, HelpText = "Local interface selector for joining a multicast group. Accepts an IPv4 address, interface index, or interface name/description (for example 127.0.0.1 or loopback_0).")]
+        public string MulticastInterface { get; set; } = string.Empty;
+
         [Option('p', "password", Required = false, HelpText = "Your password on www.SOTAmat.com. Can also be set using SOTAMAT_PASSWORD environment variable.")]
         public string Password { get; set; } = (Environment.GetEnvironmentVariable("SOTAMAT_PASSWORD") ?? string.Empty);
 

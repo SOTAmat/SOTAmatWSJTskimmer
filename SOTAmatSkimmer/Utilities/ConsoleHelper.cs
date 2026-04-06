@@ -17,7 +17,14 @@ namespace SOTAmatSkimmer.Utilities
 
                 if (carriageReturnNoLineFeed)
                 {
-                    Console.SetCursorPosition(0, Console.CursorTop);
+                    if (Console.IsOutputRedirected)
+                    {
+                        Console.Write('\r');
+                    }
+                    else
+                    {
+                        Console.SetCursorPosition(0, Console.CursorTop);
+                    }
                 }
 
                 if (color.HasValue)
@@ -37,6 +44,24 @@ namespace SOTAmatSkimmer.Utilities
                 }
 
                 Console.WriteLine($"{(dateStamp ? (DateTime.Now.ToString("MM-dd HH:mm:ss") + ": ") : "")}{message}");
+
+                if (color.HasValue)
+                {
+                    Console.ResetColor();
+                }
+            }
+        }
+
+        public static void SafeWriteRaw(string message, ConsoleColor? color = null)
+        {
+            lock (ConsoleLock)
+            {
+                if (color.HasValue)
+                {
+                    Console.ForegroundColor = color.Value;
+                }
+
+                Console.Write(message);
 
                 if (color.HasValue)
                 {

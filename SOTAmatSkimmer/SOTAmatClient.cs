@@ -167,7 +167,7 @@ namespace SOTAmatSkimmer
             }
 
             ConsoleColor deltaColor = Math.Abs(average) > 0.5 ? ConsoleColor.Red : ConsoleColor.Green;
-            if (Console.IsOutputRedirected)
+            if (Console.IsOutputRedirected && !config.WorkerMode)
             {
                 ConsoleHelper.SafeWriteLine($"FT8 DeltaTime {deltaTime:+0.00;-0.00} s (avg {average:+0.00;-0.00} s)", true, deltaColor);
                 return;
